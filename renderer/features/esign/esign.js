@@ -538,6 +538,7 @@
       }
     });
 
+    dom.pdfDropArea.addEventListener('click', openPdfDialog);
     dom.openPdfBtn.addEventListener('click', openPdfDialog);
 
     // Page navigation
