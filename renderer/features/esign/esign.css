@@ -53,13 +53,14 @@
   cursor: move;
   border: 2px dashed #1a73e8;
   border-radius: 4px;
-  background: rgba(26, 115, 232, 0.1);
+  background: rgba(26, 115, 232, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
   min-width: 80px;
   min-height: 40px;
+  box-sizing: border-box;
 }
 
 .placed-signature img {
@@ -85,22 +86,31 @@
   display: none;
 }
 
-.placed-signature:hover .remove-btn { display: block; }
+.placed-signature:hover .remove-btn { display: flex; }
 
 .placed-signature .resize-handle {
   position: absolute;
-  bottom: -6px;
-  right: -6px;
-  width: 12px;
-  height: 12px;
+  bottom: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
   background: #1a73e8;
   border: 2px solid white;
-  border-radius: 2px;
-  cursor: se-resize;
-  display: none;
+  border-radius: 3px;
+  cursor: nwse-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-.placed-signature:hover .resize-handle { display: block; }
+.placed-signature .resize-handle::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid white;
+  border-bottom: 2px solid white;
+}
 
 /* Signature Pad */
 .signature-pad-section { text-align: center; }
@@ -173,7 +183,3 @@
 
 .sig-list-item:hover .del-sig { display: block; }
 
-/* PDF drop area */
-.pdf-drop-area {
-  composes: drop-zone;
-}
