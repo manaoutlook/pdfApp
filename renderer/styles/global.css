@@ -1,0 +1,293 @@
+/* ============================================================
+   SmartPDF - Global Styles
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #f0f2f5;
+  color: #333;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* ============================================================
+   Toolbar
+   ============================================================ */
+.toolbar {
+  background: #fff;
+  padding: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+  position: relative;
+  height: 52px;
+}
+
+.toolbar h1 {
+  font-size: 18px;
+  color: #1a73e8;
+  margin-right: 20px;
+  white-space: nowrap;
+}
+
+.toolbar .spacer { flex: 1; }
+
+.feature-meta {
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================================
+   Main Layout
+   ============================================================ */
+.main-layout {
+  display: flex;
+  height: calc(100vh - 52px);
+}
+
+/* ============================================================
+   Sidebar
+   ============================================================ */
+.sidebar {
+  width: 200px;
+  background: #fff;
+  border-right: 1px solid #dadce0;
+  padding: 12px 0;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #999;
+  padding: 8px 16px 4px;
+  letter-spacing: 0.5px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: #555;
+  text-align: left;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+
+.nav-btn:hover {
+  background: #f0f6ff;
+  color: #1a73e8;
+}
+
+.nav-btn.active {
+  background: #e8f0fe;
+  color: #1a73e8;
+  border-left-color: #1a73e8;
+  font-weight: 600;
+}
+
+.nav-icon { font-size: 16px; }
+.nav-label { white-space: nowrap; }
+
+/* ============================================================
+   Content Area
+   ============================================================ */
+.content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   Feature Page Styles (shared)
+   ============================================================ */
+.feature-page {
+  display: flex;
+  height: 100%;
+}
+
+.feature-main {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.feature-sidebar {
+  width: 280px;
+  background: #fff;
+  border-left: 1px solid #dadce0;
+  padding: 16px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Shared Buttons
+   ============================================================ */
+button {
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: #1a73e8;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover { background: #1557b0; }
+.btn-primary:disabled { background: #a8c7fa; cursor: not-allowed; }
+
+.btn-secondary {
+  background: #e8eaed;
+  color: #333;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover { background: #d2d5d9; }
+
+.btn-success {
+  background: #34a853;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-success:hover { background: #2d8f47; }
+.btn-success:disabled { background: #a8d8b5; cursor: not-allowed; }
+
+.btn-danger {
+  background: #ea4335;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-danger:hover { background: #c53929; }
+
+/* ============================================================
+   Drop Zone
+   ============================================================ */
+.drop-zone {
+  border: 2px dashed #dadce0;
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  max-width: 500px;
+}
+
+.drop-zone:hover {
+  border-color: #1a73e8;
+  background: #f0f6ff;
+}
+
+.drop-zone.drag-over {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+}
+
+.drop-zone .icon { font-size: 48px; margin-bottom: 10px; }
+.drop-zone h2 { color: #1a73e8; margin-bottom: 8px; font-size: 20px; }
+.drop-zone p { color: #666; font-size: 14px; }
+
+/* ============================================================
+   Progress Bar
+   ============================================================ */
+.progress-container { margin: 16px 0; width: 100%; max-width: 400px; }
+.progress-bar {
+  height: 8px;
+  background: #e8eaed;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #1a73e8;
+  border-radius: 4px;
+  transition: width 0.3s;
+  width: 0%;
+}
+
+.progress-label {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* ============================================================
+   Scrollbar Styling
+   ============================================================ */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+/* ============================================================
+   Utility Classes
+   ============================================================ */
+.hidden { display: none !important; }
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #444;
+  border-bottom: 1px solid #e8eaed;
+  padding-bottom: 8px;
+}
+
+.section { margin-bottom: 20px; }
+
+.file-name {
+  font-size: 13px;
+  color: #666;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

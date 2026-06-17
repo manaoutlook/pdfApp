@@ -1,8 +1,8 @@
 {
-  "name": "pdf-signer",
+  "name": "smart-pdf",
   "version": "1.0.0",
-  "description": "Desktop PDF signing application with drag-and-drop, image signature, and mouse drawing",
-  "main": "main.js",
+  "description": "SmartPDF - Desktop PDF signing application with drag-and-drop, image signature, and mouse drawing",
+  "main": "main/main.js",
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
@@ -13,15 +13,14 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
-    "appId": "com.pdfsigner.app",
-    "productName": "PDF Signer",
+    "appId": "com.smartpdf.app",
+    "productName": "SmartPDF",
     "directories": {
       "output": "dist"
     },
     "files": [
-      "main.js",
-      "renderer.js",
-      "index.html",
+      "main/**/*",
+      "renderer/**/*",
       "node_modules/**/*"
     ],
     "win": {

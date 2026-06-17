@@ -1,0 +1,76 @@
+<!-- ============================================================
+     SmartPDF - eSign Feature
+     ============================================================ -->
+<div class="feature-page">
+  <!-- Main PDF Viewer -->
+  <div class="feature-main">
+    <!-- PDF Drop Area (shown when no PDF loaded) -->
+    <div class="pdf-drop-area drop-zone" id="esign-pdfDropArea">
+      <div class="icon">📄</div>
+      <h2>Drop PDF file here</h2>
+      <p>or click "Open PDF" to browse files</p>
+    </div>
+
+    <!-- PDF Page Container (shown after PDF loaded) -->
+    <div class="pdf-page-container hidden" id="esign-pdfPageContainer">
+      <div class="pdf-toolbar-inline">
+        <button id="esign-openPdfBtn" class="btn-primary">📄 Open PDF</button>
+        <span id="esign-fileName" class="file-name"></span>
+        <div class="spacer"></div>
+        <button id="esign-prevPageBtn" class="btn-secondary">◀ Prev</button>
+        <span id="esign-pageInfo">Page 0 / 0</span>
+        <button id="esign-nextPageBtn" class="btn-secondary">Next ▶</button>
+        <div style="width:12px"></div>
+        <button id="esign-savePdfBtn" class="btn-success" disabled>💾 Save Signed PDF</button>
+      </div>
+      <div style="position:relative;display:inline-block;margin-top:12px">
+        <canvas id="esign-pdf-canvas"></canvas>
+        <div id="esign-signature-overlay"></div>
+      </div>
+      <div class="page-info" id="esign-pageInfoBottom"></div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="feature-sidebar">
+    <!-- Image Signature -->
+    <div class="section">
+      <div class="section-title">🖼️ Image Signature</div>
+      <div class="sig-drop-zone" id="esign-sigDropZone">
+        <div style="font-size:32px;margin-bottom:6px">🖼️</div>
+        <div>Drop image file here</div>
+        <div style="font-size:11px;color:#999;margin-top:4px">PNG, JPG, GIF, BMP</div>
+      </div>
+      <button id="esign-openImageBtn" class="btn-secondary" style="width:100%;margin-top:8px">📁 Browse Image</button>
+    </div>
+
+    <!-- Draw Signature -->
+    <div class="section">
+      <div class="section-title">✍️ Draw Signature</div>
+      <div class="signature-pad-section">
+        <canvas id="esign-sig-canvas"></canvas>
+        <div class="sig-actions">
+          <button id="esign-clearSigBtn" class="btn-secondary">🗑️ Clear</button>
+          <button id="esign-addDrawSigBtn" class="btn-primary">➕ Add to PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved Signatures -->
+    <div class="section">
+      <div class="section-title">📋 Saved Signatures <span id="esign-sigCount" style="font-weight:normal;color:#999;font-size:12px">(0)</span></div>
+      <div class="sig-list" id="esign-sigList"></div>
+      <div style="font-size:11px;color:#888;margin-top:6px">Click to place on PDF</div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="section" style="background:#f8f9fa;padding:10px;border-radius:6px;font-size:12px;color:#555;line-height:1.5">
+      <strong>💡 How to use:</strong><br>
+      1. Open / Drop a PDF file<br>
+      2. Add signature via image or draw<br>
+      3. Click saved signature to place on PDF<br>
+      4. Drag & resize signatures<br>
+      5. Save the signed PDF
+    </div>
+  </div>
+</div>

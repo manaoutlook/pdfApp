@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartPDF</title>
+  <link rel="stylesheet" href="styles/global.css">
+</head>
+<body>
+  <!-- Top Toolbar -->
+  <div class="toolbar">
+    <h1>SmartPDF</h1>
+    <div class="spacer"></div>
+    <div id="featureMeta" class="feature-meta"></div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="main-layout">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-section-title">PDF Tools</div>
+      <button class="nav-btn active" data-feature="esign">
+        <span class="nav-icon">✍️</span>
+        <span class="nav-label">eSign</span>
+      </button>
+      <button class="nav-btn" data-feature="compress">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">Compress</span>
+      </button>
+      <button class="nav-btn" data-feature="convert">
+        <span class="nav-icon">🔄</span>
+        <span class="nav-label">Convert</span>
+      </button>
+      <button class="nav-btn" data-feature="split">
+        <span class="nav-icon">✂️</span>
+        <span class="nav-label">Split</span>
+      </button>
+      <button class="nav-btn" data-feature="merge">
+        <span class="nav-icon">📑</span>
+        <span class="nav-label">Merge</span>
+      </button>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="content" id="content">
+      <!-- Feature content loads here -->
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
