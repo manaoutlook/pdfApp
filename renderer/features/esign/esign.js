@@ -6,6 +6,7 @@
   'use strict';
 
   const { ipcRenderer } = require('electron');
+  const { Buffer } = require('buffer');
   const pdfjsLib = require('pdfjs-dist');
   const { PDFDocument } = require('pdf-lib');
 
@@ -233,7 +234,8 @@
     const fileName = filePath.split(/[/\\]/).pop();
     dom.fileName.textContent = `📄 ${fileName}`;
 
-    const loadingTask = pdfjsLib.getDocument({ data: atob(base64) });
+    const pdfBytes = Buffer.from(base64, 'base64');
+    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
     loadingTask.promise.then((doc) => {
       pdfDoc = doc;
       totalPages = doc.numPages;
@@ -249,12 +251,7 @@
   }
 
   function arrayBufferToBase64(buffer) {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
+    return Buffer.from(buffer).toString('base64');
   }
 
   function showPdfView() {
@@ -409,7 +406,8 @@
   async function saveSignedPdf() {
     if (!pdfDataBase64) return;
 
-    const pdfDocLib = await PDFDocument.load(atob(pdfDataBase64));
+    const pdfBytesLoad = Buffer.from(pdfDataBase64, 'base64');
+    const pdfDocLib = await PDFDocument.load(pdfBytesLoad);
 
     for (const sig of signatures) {
       const page = pdfDocLib.getPage(sig.page - 1);
@@ -444,12 +442,7 @@
     }
 
     const pdfBytes = await pdfDocLib.save();
-    // Convert Uint8Array to base64 safely using array reduce
-    let binary = '';
-    for (let i = 0; i < pdfBytes.length; i++) {
-      binary += String.fromCharCode(pdfBytes[i]);
-    }
-    const base64 = btoa(binary);
+    const base64 = Buffer.from(pdfBytes).toString('base64');
 
     const saved = await ipcRenderer.invoke('esign:save-pdf', base64);
     if (saved) {
@@ -458,12 +451,7 @@
   }
 
   function base64ToBytes(base64) {
-    const binaryStr = atob(base64);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
-    }
-    return bytes;
+    return Buffer.from(base64, 'base64');
   }
 
   // ============================================================
