@@ -444,7 +444,12 @@
     }
 
     const pdfBytes = await pdfDocLib.save();
-    const base64 = btoa(String.fromCharCode(...pdfBytes));
+    // Convert Uint8Array to base64 safely using array reduce
+    let binary = '';
+    for (let i = 0; i < pdfBytes.length; i++) {
+      binary += String.fromCharCode(pdfBytes[i]);
+    }
+    const base64 = btoa(binary);
 
     const saved = await ipcRenderer.invoke('esign:save-pdf', base64);
     if (saved) {
