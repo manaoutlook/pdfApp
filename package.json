@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "canvas": "^3.2.3",
+    "electron": "^42.4.0",
+    "path-browserify": "^1.0.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^2.16.105"
+  }
+}
