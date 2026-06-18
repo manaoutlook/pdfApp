@@ -153,7 +153,8 @@
     dom.sigCanvas.width = sigCanvasWidth * dpr;
     dom.sigCanvas.height = sigCanvasHeight * dpr;
     if (sigCtx) {
-      sigCtx.scale(dpr, dpr);
+      // Use setTransform to REPLACE (not multiply) the scale — prevents dpr accumulation
+      sigCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       sigCtx.strokeStyle = '#1a1a2e';
       sigCtx.lineWidth = 3;
       sigCtx.lineCap = 'round';
@@ -559,61 +560,134 @@
   // Save Signed PDF
   // ============================================================
   async function saveSignedPdf() {
-    const tab = getActiveTab();
-    if (!tab || !pdfTabs) return;
-
-    const signatures = getTabSignatures(tab);
-    if (signatures.length === 0) {
-      // Save original PDF if no signatures
-      const saved = await ipcRenderer.invoke('esign:save-pdf', tab.base64);
-      if (saved) {
-        pdfTabs.setTabDirty(tab.id, false);
-      }
-      return;
-    }
-
-    const pdfBytesLoad = Buffer.from(tab.base64, 'base64');
-    const pdfDocLib = await PDFDocument.load(pdfBytesLoad);
-
-    for (const sig of signatures) {
-      const page = pdfDocLib.getPage(sig.page - 1);
-      const { width: pageWidth, height: pageHeight } = page.getSize();
-
-      const canvasWidth = dom.pdfCanvas.width;
-      const canvasHeight = dom.pdfCanvas.height;
-
-      const xRatio = pageWidth / canvasWidth;
-      const yRatio = pageHeight / canvasHeight;
-
-      const pdfX = sig.x * xRatio;
-      const pdfY = pageHeight - (sig.y * yRatio) - (sig.height * yRatio);
-      const pdfW = sig.width * xRatio;
-      const pdfH = sig.height * yRatio;
-
-      let image;
-      if (sig.dataUrl.startsWith('data:image/png')) {
-        const pngData = base64ToBytes(sig.dataUrl.split(',')[1]);
-        image = await pdfDocLib.embedPng(pngData);
-      } else {
-        const jpgData = base64ToBytes(sig.dataUrl.split(',')[1]);
-        image = await pdfDocLib.embedJpg(jpgData);
+    try {
+      const tab = getActiveTab();
+      if (!tab || !pdfTabs) {
+        console.error('[saveSignedPdf] No active tab');
+        return;
       }
 
-      page.drawImage(image, {
-        x: pdfX,
-        y: pdfY,
-        width: pdfW,
-        height: pdfH,
-        opacity: 0.92,
+      const signatures = getTabSignatures(tab);
+      if (signatures.length === 0) {
+        // Save original PDF if no signatures
+        console.log('[saveSignedPdf] No signatures — saving original PDF');
+        const saved = await ipcRenderer.invoke('esign:save-pdf', tab.base64);
+        if (saved) {
+          pdfTabs.setTabDirty(tab.id, false);
+        }
+        return;
+      }
+
+      console.log(`[saveSignedPdf] Processing ${signatures.length} signature(s) for tab "${tab.fileName}"`);
+      console.log(`[saveSignedPdf] PDF base64 length: ${tab.base64 ? tab.base64.length : 'MISSING'}`);
+
+      if (!tab.base64) {
+        alert('PDF data is not available. Please re-open the file.');
+        return;
+      }
+
+      const pdfBytesLoad = Buffer.from(tab.base64, 'base64');
+      console.log(`[saveSignedPdf] Loaded PDF bytes: ${pdfBytesLoad.length}`);
+
+      const pdfDocLib = await PDFDocument.load(pdfBytesLoad, {
+        ignoreEncryption: true,
       });
-    }
+      console.log(`[saveSignedPdf] PDF loaded — ${pdfDocLib.getPageCount()} page(s)`);
 
-    const pdfBytes = await pdfDocLib.save();
-    const base64 = Buffer.from(pdfBytes).toString('base64');
+      for (let i = 0; i < signatures.length; i++) {
+        const sig = signatures[i];
+        console.log(`[saveSignedPdf] Embedding signature ${i + 1}/${signatures.length} on page ${sig.page}`);
 
-    const saved = await ipcRenderer.invoke('esign:save-pdf', base64);
-    if (saved) {
-      pdfTabs.updateTabData(tab.id, base64);
+        if (!sig.dataUrl || typeof sig.dataUrl !== 'string') {
+          console.error(`[saveSignedPdf] Invalid dataUrl for signature ${i}`);
+          continue;
+        }
+
+        const page = pdfDocLib.getPage(sig.page - 1);
+        const { width: pageWidth, height: pageHeight } = page.getSize();
+
+        const canvasWidth = dom.pdfCanvas.width;
+        const canvasHeight = dom.pdfCanvas.height;
+
+        if (!canvasWidth || !canvasHeight) {
+          console.error('[saveSignedPdf] Canvas dimensions are zero — cannot compute coordinates');
+          continue;
+        }
+
+        const xRatio = pageWidth / canvasWidth;
+        const yRatio = pageHeight / canvasHeight;
+
+        const pdfX = sig.x * xRatio;
+        const pdfY = pageHeight - (sig.y * yRatio) - (sig.height * yRatio);
+        const pdfW = sig.width * xRatio;
+        const pdfH = sig.height * yRatio;
+
+        console.log(`[saveSignedPdf]  Page: ${pageWidth}x${pageHeight}, Canvas: ${canvasWidth}x${canvasHeight}`);
+        console.log(`[saveSignedPdf]  Signature pos: (${sig.x},${sig.y}), size: ${sig.width}x${sig.height}`);
+        console.log(`[saveSignedPdf]  PDF pos: (${pdfX.toFixed(1)},${pdfY.toFixed(1)}), size: ${pdfW.toFixed(1)}x${pdfH.toFixed(1)}`);
+
+        // Safely extract the base64 data portion of the data URL
+        const commaIndex = sig.dataUrl.indexOf(',');
+        if (commaIndex === -1) {
+          console.error(`[saveSignedPdf] Invalid data URL format for signature ${i}`);
+          continue;
+        }
+        const imageBase64 = sig.dataUrl.substring(commaIndex + 1);
+        const imageBytes = base64ToBytes(imageBase64);
+
+        let image;
+        try {
+          if (sig.dataUrl.startsWith('data:image/png')) {
+            image = await pdfDocLib.embedPng(imageBytes);
+          } else if (sig.dataUrl.startsWith('data:image/jpeg') || sig.dataUrl.startsWith('data:image/jpg')) {
+            image = await pdfDocLib.embedJpg(imageBytes);
+          } else {
+            // Fallback: try PNG first, then JPEG
+            console.warn(`[saveSignedPdf] Unknown image type, trying PNG embed`);
+            image = await pdfDocLib.embedPng(imageBytes);
+          }
+          console.log(`[saveSignedPdf]  Image embedded successfully (${image.width}x${image.height})`);
+        } catch (embedErr) {
+          console.error(`[saveSignedPdf] Failed to embed image: ${embedErr.message}`);
+          // Try JPEG as fallback
+          try {
+            image = await pdfDocLib.embedJpg(imageBytes);
+            console.log(`[saveSignedPdf]  Fallback JPEG embed succeeded`);
+          } catch (embedErr2) {
+            console.error(`[saveSignedPdf] Fallback embed also failed: ${embedErr2.message}`);
+            alert(`Failed to embed signature ${i + 1}. The image format may be unsupported.`);
+            continue;
+          }
+        }
+
+        page.drawImage(image, {
+          x: pdfX,
+          y: pdfY,
+          width: pdfW,
+          height: pdfH,
+          opacity: 0.92,
+        });
+        console.log(`[saveSignedPdf]  Image drawn on page successfully`);
+      }
+
+      console.log('[saveSignedPdf] Saving modified PDF...');
+      const pdfBytes = await pdfDocLib.save();
+      console.log(`[saveSignedPdf] Saved PDF bytes: ${pdfBytes.length}`);
+
+      const base64 = Buffer.from(pdfBytes).toString('base64');
+      console.log(`[saveSignedPdf] Encoded to base64: ${base64.length} chars`);
+
+      const saved = await ipcRenderer.invoke('esign:save-pdf', base64);
+      if (saved) {
+        pdfTabs.updateTabData(tab.id, base64);
+        console.log('[saveSignedPdf] PDF saved successfully with signatures');
+        alert('PDF saved with signatures!');
+      } else {
+        console.log('[saveSignedPdf] Save cancelled by user');
+      }
+    } catch (err) {
+      console.error('[saveSignedPdf] Fatal error:', err);
+      alert(`Failed to save PDF: ${err.message}\n\nPlease open DevTools (Cmd+Opt+I) for detailed logs.`);
     }
   }
 

@@ -1,5 +1,5 @@
 {
-  "name": "smart-pdf",
+  "name": "SmartPDF",
   "version": "1.0.0",
   "description": "SmartPDF - Desktop PDF signing application with drag-and-drop, image signature, and mouse drawing",
   "main": "main/main.js",
@@ -10,7 +10,7 @@
     "dist:mac": "electron-builder --mac",
     "dist:linux": "electron-builder --linux",
     "dist:all": "electron-builder --win --mac --linux",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps && node scripts/fix-macos-branding.js"
   },
   "build": {
     "appId": "com.smartpdf.app",
@@ -45,6 +45,7 @@
           "arch": ["x64", "arm64"]
         }
       ],
+      "icon": "assets/logo.png",
       "category": "public.app-category.productivity"
     },
     "linux": {
