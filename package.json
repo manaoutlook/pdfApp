@@ -30,7 +30,7 @@
           "arch": ["x64"]
         }
       ],
-      "icon": null
+      "icon": "assets/logo.ico"
     },
     "nsis": {
       "oneClick": false,

@@ -13,6 +13,7 @@ function createWindow() {
       contextIsolation: false,
     },
     title: 'SmartPDF',
+    icon: path.join(__dirname, '..', 'assets', 'logo.ico'),
   });
 
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));

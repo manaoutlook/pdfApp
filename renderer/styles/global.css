@@ -36,6 +36,12 @@ body {
 
 .toolbar .spacer { flex: 1; }
 
+.toolbar-logo {
+  height: 32px;
+  width: 32px;
+  flex-shrink: 0;
+}
+
 .feature-meta {
   font-size: 13px;
   color: #666;
