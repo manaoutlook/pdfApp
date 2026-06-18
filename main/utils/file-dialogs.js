@@ -2,17 +2,26 @@ const { dialog } = require('electron');
 const fs = require('fs');
 
 /**
- * Open a file dialog and read the selected file as base64
+ * Open a file dialog and read the selected file(s) as base64
  * @param {BrowserWindow} window - The parent window
  * @param {object} filters - Dialog filters
- * @returns {object|null} { filePath, data (base64) }
+ * @param {boolean} multiSelect - Allow multiple file selection
+ * @returns {object|null} { filePath, data (base64) } for single, or array for multi
  */
-function openAndReadFile(window, filters) {
+function openAndReadFile(window, filters, multiSelect = false) {
+  const properties = multiSelect ? ['openFile', 'multiSelections'] : ['openFile'];
   const result = dialog.showOpenDialogSync(window, {
     filters,
-    properties: ['openFile'],
+    properties,
   });
   if (!result || result.length === 0) return null;
+
+  if (multiSelect) {
+    return result.map((filePath) => {
+      const data = fs.readFileSync(filePath);
+      return { filePath, data: data.toString('base64') };
+    });
+  }
 
   const filePath = result[0];
   const data = fs.readFileSync(filePath);

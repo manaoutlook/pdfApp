@@ -15,6 +15,7 @@ const features = {
 
 let currentFeature = 'esign';
 let loadedScripts = {};
+let sharedLoaded = false;
 
 // DOM refs
 const sidebar = document.getElementById('sidebar');
@@ -31,6 +32,28 @@ sidebar.addEventListener('click', (e) => {
 
   navigateTo(feature);
 });
+
+/**
+ * Pre-load shared modules that all features depend on.
+ * Currently loads the PdfTabs component from shared/components/pdf-tabs.js
+ */
+function loadSharedModules() {
+  if (sharedLoaded) return Promise.resolve();
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'shared/components/pdf-tabs.js';
+    script.onload = () => {
+      console.log('Shared modules loaded (PdfTabs)');
+      sharedLoaded = true;
+      resolve();
+    };
+    script.onerror = () => {
+      console.warn('Shared modules failed to load, continuing without PdfTabs');
+      resolve(); // Don't block navigation if shared module fails
+    };
+    document.body.appendChild(script);
+  });
+}
 
 function navigateTo(feature) {
   currentFeature = feature;
@@ -60,24 +83,24 @@ function navigateTo(feature) {
         document.head.appendChild(link);
       }
 
-      // Load and execute feature-specific JS
-      if (loadedScripts[feature]) {
-        // Re-run the module
-        loadedScripts[feature]();
-      } else {
-        const scriptPath = `features/${feature}/${feature}.js`;
-        // Dynamic import via script element
-        const script = document.createElement('script');
-        script.src = scriptPath;
-        script.onload = () => {
-          // Assume the feature module exports an init function on window
-          if (window.__featureInit && window.__featureInit[feature]) {
-            loadedScripts[feature] = window.__featureInit[feature];
-            window.__featureInit[feature]();
-          }
-        };
-        document.body.appendChild(script);
-      }
+      // Ensure shared modules are loaded before feature JS
+      loadSharedModules().then(() => {
+        // Load and execute feature-specific JS
+        if (loadedScripts[feature]) {
+          loadedScripts[feature]();
+        } else {
+          const scriptPath = `features/${feature}/${feature}.js`;
+          const script = document.createElement('script');
+          script.src = scriptPath;
+          script.onload = () => {
+            if (window.__featureInit && window.__featureInit[feature]) {
+              loadedScripts[feature] = window.__featureInit[feature];
+              window.__featureInit[feature]();
+            }
+          };
+          document.body.appendChild(script);
+        }
+      });
     })
     .catch(err => {
       content.innerHTML = `

@@ -13,6 +13,10 @@
 
     <!-- PDF Page Container (shown after PDF loaded) -->
     <div class="pdf-page-container hidden" id="esign-pdfPageContainer">
+      <!-- Shared PDF Tab Bar (uses .pdf-tab-bar / .pdf-tab-scroll / .pdf-tab from global.css) -->
+      <div class="pdf-tab-bar" id="esign-tabBar">
+        <div class="pdf-tab-scroll" id="esign-tabScroll"></div>
+      </div>
       <div class="pdf-toolbar-inline">
         <button id="esign-openPdfBtn" class="btn-primary">📄 Open PDF</button>
         <span id="esign-fileName" class="file-name"></span>

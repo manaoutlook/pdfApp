@@ -1,5 +1,6 @@
 // ============================================================
 // SmartPDF - eSign Feature
+// Uses the shared PdfTabs component for multi-file management.
 // ============================================================
 
 (function() {
@@ -7,21 +8,13 @@
 
   const { ipcRenderer } = require('electron');
   const { Buffer } = require('buffer');
-  const pdfjsLib = require('pdfjs-dist');
   const { PDFDocument } = require('pdf-lib');
-
-  // Set worker path
-  pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/build/pdf.worker.entry');
 
   // ============================================================
   // State
   // ============================================================
-  let pdfDoc = null;
-  let pdfDataBase64 = null;
-  let currentPage = 1;
-  let totalPages = 0;
+  let pdfTabs = null;
   let scale = 1.5;
-  let signatures = [];
   let savedSignatures = [];
   let sigIdCounter = 0;
   let placedSigIdCounter = 0;
@@ -61,7 +54,68 @@
       sigCount: document.getElementById('esign-sigCount'),
       sigDropZone: document.getElementById('esign-sigDropZone'),
       openImageBtn: document.getElementById('esign-openImageBtn'),
+      tabScroll: document.getElementById('esign-tabScroll'),
+      tabBar: document.getElementById('esign-tabBar'),
     };
+  }
+
+  // ============================================================
+  // PdfTabs Integration
+  // ============================================================
+
+  function initPdfTabs() {
+    if (!window.SmartPDF || !window.SmartPDF.PdfTabs) {
+      console.error('PdfTabs component not available');
+      return;
+    }
+
+    const PdfTabs = window.SmartPDF.PdfTabs;
+
+    pdfTabs = new PdfTabs({
+      tabBarEl: dom.tabBar,
+      tabScrollEl: dom.tabScroll,
+      onTabSwitch: onTabSwitched,
+      onTabClose: onTabClosed,
+      onDocumentLoad: onDocumentLoaded,
+    });
+  }
+
+  function getActiveTab() {
+    return pdfTabs ? pdfTabs.getActiveTab() : null;
+  }
+
+  function getTabSignatures(tab) {
+    if (!tab) return [];
+    if (!tab.data.signatures) tab.data.signatures = [];
+    return tab.data.signatures;
+  }
+
+  function onTabSwitched(tab) {
+    if (!tab) return;
+    dom.pdfPageContainer.classList.remove('hidden');
+    dom.pdfDropArea.classList.add('hidden');
+    updateTabInfo(tab);
+    renderPage(tab);
+  }
+
+  function onTabClosed(tabId) {
+    // When last tab closes, the PdfTabs handles hiding the tab bar
+    if (pdfTabs && pdfTabs.getTabCount() === 0) {
+      dom.pdfPageContainer.classList.add('hidden');
+      dom.pdfDropArea.classList.remove('hidden');
+    }
+  }
+
+  function onDocumentLoaded(tab) {
+    updateTabInfo(tab);
+  }
+
+  function updateTabInfo(tab) {
+    const info = `Page ${tab.currentPage} / ${tab.totalPages}`;
+    dom.pageInfo.textContent = info;
+    dom.pageInfoBottom.textContent = info;
+    dom.fileName.textContent = `📄 ${tab.fileName}`;
+    dom.savePdfBtn.disabled = false;
   }
 
   // ============================================================
@@ -73,7 +127,6 @@
 
   function initSigCanvas() {
     if (!dom.sigCanvas) return;
-    // Use high-DPI resolution for sharp signatures with natural ink look
     const rect = dom.sigCanvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     sigCanvasWidth = rect.width;
@@ -82,14 +135,11 @@
     dom.sigCanvas.height = sigCanvasHeight * dpr;
     sigCtx = dom.sigCanvas.getContext('2d');
     sigCtx.scale(dpr, dpr);
-    // Clear to transparent so signature PNG has no background
     sigCtx.clearRect(0, 0, sigCanvasWidth, sigCanvasHeight);
-    // Natural dark ink styling - slightly transparent for authentic pen-on-paper look
     sigCtx.strokeStyle = '#1a1a2e';
     sigCtx.lineWidth = 3;
     sigCtx.lineCap = 'round';
     sigCtx.lineJoin = 'round';
-    // Subtle shadow gives depth like real ink bleeding into paper
     sigCtx.shadowColor = 'rgba(0,0,0,0.12)';
     sigCtx.shadowBlur = 2;
   }
@@ -130,7 +180,6 @@
     drawPoints = [pos];
     sigCtx.beginPath();
     sigCtx.moveTo(pos.x, pos.y);
-    // Place a small dot at click position for single-tap signatures
     sigCtx.arc(pos.x, pos.y, 1.5, 0, Math.PI * 2);
     sigCtx.fillStyle = '#1a1a2e';
     sigCtx.fill();
@@ -165,30 +214,19 @@
   // ============================================================
   // Image Background Removal
   // ============================================================
-  /**
-   * Removes the background color from a signature image.
-   * Uses a conservative approach to preserve the actual ink strokes.
-   * Only removes pixels that are lighter than the detected background
-   * (to protect dark signature ink from being erased).
-   */
   function removeImageBackground(dataUrl) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        // Use a temporary canvas to process pixels
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = img.width;
         canvas.height = img.height;
-
-        // Draw the original image
         ctx.drawImage(img, 0, 0);
 
-        // Get all pixel data
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
 
-        // Sample corners to detect the background color
         const corners = [
           getPixelColor(data, 0, 0, canvas.width),
           getPixelColor(data, canvas.width - 1, 0, canvas.width),
@@ -196,7 +234,6 @@
           getPixelColor(data, canvas.width - 1, canvas.height - 1, canvas.width),
         ];
 
-        // Find the lightest corner - signatures typically have white/light backgrounds
         let bgColor = corners[0];
         let maxLum = getLuminance(corners[0].r, corners[0].g, corners[0].b);
         for (let i = 1; i < corners.length; i++) {
@@ -208,45 +245,30 @@
         }
 
         const bgLuminance = getLuminance(bgColor.r, bgColor.g, bgColor.b);
-
-        // Conservative threshold - only remove pixels very close to the light background
-        // This protects darker ink strokes from being erased
         const bgTolerance = 30;
         const featherRange = 10;
 
-        // Process each pixel
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
           const g = data[i + 1];
           const b = data[i + 2];
-
           const pixelLum = getLuminance(r, g, b);
 
-          // Only consider making a pixel transparent if it's as light or lighter than the background
-          // This is the key protection: dark ink pixels are NEVER made transparent
-          const isLighterOrEqual = pixelLum >= bgLuminance * 0.85;
-
-          // If pixel is lighter than background threshold, check color distance
-          if (isLighterOrEqual) {
+          if (pixelLum >= bgLuminance * 0.85) {
             const dist = colorDistance(r, g, b, bgColor.r, bgColor.g, bgColor.b);
-
             if (dist < bgTolerance) {
-              // Fully transparent - this is likely background
               data[i + 3] = 0;
             } else if (dist < bgTolerance + featherRange) {
-              // Semi-transparent feathering for edge pixels
               const alpha = Math.round(((dist - bgTolerance) / featherRange) * 255);
               data[i + 3] = Math.min(255, alpha);
             }
-            // else keep fully opaque
           }
-          // Darker pixels than background are always kept fully opaque
         }
 
         ctx.putImageData(imageData, 0, 0);
         resolve(canvas.toDataURL('image/png'));
       };
-      img.onerror = () => resolve(dataUrl); // Fallback: return original
+      img.onerror = () => resolve(dataUrl);
       img.src = dataUrl;
     });
   }
@@ -256,16 +278,11 @@
     return { r: data[idx], g: data[idx + 1], b: data[idx + 2] };
   }
 
-  /**
-   * Calculates the luminance (perceived brightness) of a pixel.
-   * Uses the standard ITU-R BT.601 formula.
-   */
   function getLuminance(r, g, b) {
     return 0.299 * r + 0.587 * g + 0.114 * b;
   }
 
   function colorDistance(r1, g1, b1, r2, g2, b2) {
-    // Use a weighted Euclidean distance that approximates human perception
     const dr = r1 - r2;
     const dg = g1 - g2;
     const db = b1 - b2;
@@ -280,7 +297,6 @@
       alert('Please draw a signature first.');
       return;
     }
-    // toDataURL('image/png') preserves transparency since canvas background is transparent
     const dataUrl = dom.sigCanvas.toDataURL('image/png');
     savedSignatures.push({ id: sigIdCounter++, dataUrl, type: 'draw' });
     clearSigPad();
@@ -347,66 +363,43 @@
   }
 
   // ============================================================
-  // PDF Loading
+  // PDF Loading - Uses shared PdfTabs
   // ============================================================
   async function openPdfDialog() {
     const result = await ipcRenderer.invoke('esign:open-pdf');
-    if (result) {
-      loadPdfFromBase64(result.filePath, result.data);
+    if (!result || !pdfTabs) return;
+
+    if (!Array.isArray(result)) {
+      // Single file fallback
+      pdfTabs.openFiles([{ filePath: result.filePath, data: result.data }]);
+      return;
     }
+    pdfTabs.openFiles(result);
   }
 
   function loadPdfFromFile(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = arrayBufferToBase64(e.target.result);
-      loadPdfFromBase64(file.name, base64);
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  function loadPdfFromBase64(filePath, base64) {
-    pdfDataBase64 = base64;
-    const fileName = filePath.split(/[/\\]/).pop();
-    dom.fileName.textContent = `📄 ${fileName}`;
-
-    const pdfBytes = Buffer.from(base64, 'base64');
-    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
-    loadingTask.promise.then((doc) => {
-      pdfDoc = doc;
-      totalPages = doc.numPages;
-      currentPage = 1;
-      signatures = [];
-      clearOverlay();
-      showPdfView();
-      renderPage(currentPage);
-      dom.savePdfBtn.disabled = false;
-    }).catch((err) => {
-      alert('Failed to load PDF: ' + err.message);
+    if (!pdfTabs) return;
+    const tab = pdfTabs.getTabCount();
+    if (tab >= window.SmartPDF.MAX_TABS) {
+      alert(`Maximum of ${window.SmartPDF.MAX_TABS} PDFs can be open at once.`);
+      return;
+    }
+    pdfTabs.openFileFromDrop(file, (loadedTab) => {
+      // onTabSwitched will handle rendering
     });
   }
 
-  function arrayBufferToBase64(buffer) {
-    return Buffer.from(buffer).toString('base64');
-  }
-
   function showPdfView() {
-    dom.pdfDropArea.classList.add('hidden');
-    dom.pdfPageContainer.classList.remove('hidden');
-  }
-
-  function hidePdfView() {
-    dom.pdfDropArea.classList.remove('hidden');
-    dom.pdfPageContainer.classList.add('hidden');
+    // Handled by PdfTabs
   }
 
   // ============================================================
   // Page Rendering
   // ============================================================
-  async function renderPage(pageNum) {
-    if (!pdfDoc) return;
+  async function renderPage(tab) {
+    if (!tab || !tab.pdfDoc) return;
 
-    const page = await pdfDoc.getPage(pageNum);
+    const page = await tab.pdfDoc.getPage(tab.currentPage);
     const viewport = page.getViewport({ scale });
 
     const canvas = dom.pdfCanvas;
@@ -424,13 +417,11 @@
     dom.sigOverlay.style.width = canvas.width + 'px';
     dom.sigOverlay.style.height = canvas.height + 'px';
 
-    const info = `Page ${pageNum} / ${totalPages}`;
-    dom.pageInfo.textContent = info;
-    dom.pageInfoBottom.textContent = info;
+    updateTabInfo(tab);
 
     clearOverlay();
-    signatures
-      .filter((s) => s.page === pageNum)
+    getTabSignatures(tab)
+      .filter((s) => s.page === tab.currentPage)
       .forEach((s) => renderPlaceSignature(s));
   }
 
@@ -442,7 +433,8 @@
   // Place Signatures on PDF
   // ============================================================
   function placeSignatureOnPage(dataUrl) {
-    if (!pdfDoc) {
+    const tab = getActiveTab();
+    if (!tab) {
       alert('Please open a PDF first.');
       return;
     }
@@ -457,7 +449,7 @@
 
       const sig = {
         id: placedSigIdCounter++,
-        page: currentPage,
+        page: tab.currentPage,
         x: (overlayWidth - sigWidth) / 2,
         y: (overlayHeight - sigHeight) / 2,
         width: sigWidth,
@@ -467,7 +459,9 @@
         originalHeight: img.height,
       };
 
+      const signatures = getTabSignatures(tab);
       signatures.push(sig);
+      pdfTabs.setTabDirty(tab.id, true);
       renderPlaceSignature(sig);
     };
     img.src = dataUrl;
@@ -492,7 +486,12 @@
     removeBtn.textContent = '×';
     removeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      signatures = signatures.filter((s) => s.id !== sig.id);
+      const tab = getActiveTab();
+      if (tab) {
+        const signatures = getTabSignatures(tab);
+        tab.data.signatures = signatures.filter((s) => s.id !== sig.id);
+        pdfTabs.setTabDirty(tab.id, tab.data.signatures.length > 0);
+      }
       el.remove();
       updateSigPositions();
     });
@@ -524,10 +523,12 @@
   }
 
   function updateSigPositions() {
+    const tab = getActiveTab();
+    if (!tab) return;
     const els = dom.sigOverlay.querySelectorAll('.placed-signature');
     els.forEach((el) => {
       const sigId = parseInt(el.dataset.sigId);
-      const sig = signatures.find((s) => s.id === sigId);
+      const sig = getTabSignatures(tab).find((s) => s.id === sigId);
       if (sig) {
         sig.x = parseFloat(el.style.left);
         sig.y = parseFloat(el.style.top);
@@ -538,12 +539,40 @@
   }
 
   // ============================================================
+  // Page Navigation
+  // ============================================================
+  function prevPage() {
+    const tab = getActiveTab();
+    if (tab && pdfTabs.prevPage()) {
+      renderPage(tab);
+    }
+  }
+
+  function nextPage() {
+    const tab = getActiveTab();
+    if (tab && pdfTabs.nextPage()) {
+      renderPage(tab);
+    }
+  }
+
+  // ============================================================
   // Save Signed PDF
   // ============================================================
   async function saveSignedPdf() {
-    if (!pdfDataBase64) return;
+    const tab = getActiveTab();
+    if (!tab || !pdfTabs) return;
 
-    const pdfBytesLoad = Buffer.from(pdfDataBase64, 'base64');
+    const signatures = getTabSignatures(tab);
+    if (signatures.length === 0) {
+      // Save original PDF if no signatures
+      const saved = await ipcRenderer.invoke('esign:save-pdf', tab.base64);
+      if (saved) {
+        pdfTabs.setTabDirty(tab.id, false);
+      }
+      return;
+    }
+
+    const pdfBytesLoad = Buffer.from(tab.base64, 'base64');
     const pdfDocLib = await PDFDocument.load(pdfBytesLoad);
 
     for (const sig of signatures) {
@@ -564,15 +593,12 @@
       let image;
       if (sig.dataUrl.startsWith('data:image/png')) {
         const pngData = base64ToBytes(sig.dataUrl.split(',')[1]);
-        // For drawn signatures, embed as PNG which supports transparency
-        // For image signatures, also use PNG to preserve transparency if possible
         image = await pdfDocLib.embedPng(pngData);
       } else {
         const jpgData = base64ToBytes(sig.dataUrl.split(',')[1]);
         image = await pdfDocLib.embedJpg(jpgData);
       }
 
-      // Draw with opacity for a more natural ink-on-paper blend
       page.drawImage(image, {
         x: pdfX,
         y: pdfY,
@@ -587,7 +613,7 @@
 
     const saved = await ipcRenderer.invoke('esign:save-pdf', base64);
     if (saved) {
-      alert('PDF saved successfully!');
+      pdfTabs.updateTabData(tab.id, base64);
     }
   }
 
@@ -661,14 +687,23 @@
     dom.sigDropZone.addEventListener('click', openImageDialog);
     dom.openImageBtn.addEventListener('click', openImageDialog);
 
-    // PDF drop
+    // PDF drop - uses shared PdfTabs
     const pdfViewer = document.querySelector('.feature-main');
     pdfViewer.addEventListener('dragover', (e) => e.preventDefault());
     pdfViewer.addEventListener('drop', (e) => {
       e.preventDefault();
       const files = e.dataTransfer.files;
-      if (files.length > 0 && files[0].name.endsWith('.pdf')) {
-        loadPdfFromFile(files[0]);
+      if (files.length > 0 && pdfTabs) {
+        const PdfTabs = window.SmartPDF.PdfTabs;
+        for (const file of files) {
+          if (file.name.endsWith('.pdf')) {
+            if (pdfTabs.getTabCount() >= PdfTabs.MAX_TABS) {
+              alert(`Maximum of ${PdfTabs.MAX_TABS} PDFs can be open at once.`);
+              break;
+            }
+            pdfTabs.openFileFromDrop(file);
+          }
+        }
       }
     });
 
@@ -676,17 +711,21 @@
     dom.openPdfBtn.addEventListener('click', openPdfDialog);
 
     // Page navigation
-    dom.prevPageBtn.addEventListener('click', () => {
-      if (currentPage > 1) { currentPage--; renderPage(currentPage); }
-    });
-    dom.nextPageBtn.addEventListener('click', () => {
-      if (currentPage < totalPages) { currentPage++; renderPage(currentPage); }
-    });
+    dom.prevPageBtn.addEventListener('click', prevPage);
+    dom.nextPageBtn.addEventListener('click', nextPage);
 
     dom.savePdfBtn.addEventListener('click', saveSignedPdf);
 
     // Window resize
     window.addEventListener('resize', resizeSigCanvas);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        dragTarget = null;
+        resizeTarget = null;
+      }
+    });
   }
 
   // ============================================================
@@ -694,20 +733,19 @@
   // ============================================================
   function init() {
     cacheDom();
-    if (!dom.sigCanvas) return; // Not on eSign page
+    if (!dom.sigCanvas) return;
 
     initSigCanvas();
+    initPdfTabs();
     setupGlobalEvents();
     bindEvents();
     resizeSigCanvas();
-    console.log('eSign feature initialized');
+    console.log('eSign feature initialized with shared PdfTabs');
   }
 
-  // Register init function so the router can call it
   if (!window.__featureInit) window.__featureInit = {};
   window.__featureInit.esign = init;
 
-  // Auto-init if DOM is already ready (direct load)
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     init();
   } else {

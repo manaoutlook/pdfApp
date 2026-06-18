@@ -2,10 +2,10 @@ const { BrowserWindow } = require('electron');
 const { openAndReadFile, saveBase64File } = require('../utils/file-dialogs');
 
 function register(ipcMain) {
-  // Open file dialog for PDF
+  // Open file dialog for PDF (multi-select)
   ipcMain.handle('esign:open-pdf', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
-    return openAndReadFile(win, [{ name: 'PDF Files', extensions: ['pdf'] }]);
+    return openAndReadFile(win, [{ name: 'PDF Files', extensions: ['pdf'] }], true);
   });
 
   // Open file dialog for signature image
