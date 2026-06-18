@@ -73,28 +73,43 @@
 
   function initSigCanvas() {
     if (!dom.sigCanvas) return;
+    // Use high-DPI resolution for sharp signatures with natural ink look
+    const rect = dom.sigCanvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    sigCanvasWidth = rect.width;
+    sigCanvasHeight = rect.height;
+    dom.sigCanvas.width = sigCanvasWidth * dpr;
+    dom.sigCanvas.height = sigCanvasHeight * dpr;
     sigCtx = dom.sigCanvas.getContext('2d');
-    sigCanvasWidth = dom.sigCanvas.clientWidth;
-    sigCanvasHeight = dom.sigCanvas.clientHeight;
-    dom.sigCanvas.width = sigCanvasWidth;
-    dom.sigCanvas.height = sigCanvasHeight;
-    sigCtx.strokeStyle = '#000';
-    sigCtx.lineWidth = 2;
+    sigCtx.scale(dpr, dpr);
+    // Clear to transparent so signature PNG has no background
+    sigCtx.clearRect(0, 0, sigCanvasWidth, sigCanvasHeight);
+    // Natural dark ink styling - slightly transparent for authentic pen-on-paper look
+    sigCtx.strokeStyle = '#1a1a2e';
+    sigCtx.lineWidth = 3;
     sigCtx.lineCap = 'round';
     sigCtx.lineJoin = 'round';
+    // Subtle shadow gives depth like real ink bleeding into paper
+    sigCtx.shadowColor = 'rgba(0,0,0,0.12)';
+    sigCtx.shadowBlur = 2;
   }
 
   function resizeSigCanvas() {
     if (!dom.sigCanvas) return;
-    sigCanvasWidth = dom.sigCanvas.clientWidth;
-    sigCanvasHeight = dom.sigCanvas.clientHeight;
-    dom.sigCanvas.width = sigCanvasWidth;
-    dom.sigCanvas.height = sigCanvasHeight;
+    const rect = dom.sigCanvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    sigCanvasWidth = rect.width;
+    sigCanvasHeight = rect.height;
+    dom.sigCanvas.width = sigCanvasWidth * dpr;
+    dom.sigCanvas.height = sigCanvasHeight * dpr;
     if (sigCtx) {
-      sigCtx.strokeStyle = '#000';
-      sigCtx.lineWidth = 2;
+      sigCtx.scale(dpr, dpr);
+      sigCtx.strokeStyle = '#1a1a2e';
+      sigCtx.lineWidth = 3;
       sigCtx.lineCap = 'round';
       sigCtx.lineJoin = 'round';
+      sigCtx.shadowColor = 'rgba(0,0,0,0.12)';
+      sigCtx.shadowBlur = 2;
     }
   }
 
@@ -103,8 +118,8 @@
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     return {
-      x: (clientX - rect.left) * (dom.sigCanvas.width / rect.width),
-      y: (clientY - rect.top) * (dom.sigCanvas.height / rect.height),
+      x: clientX - rect.left,
+      y: clientY - rect.top,
     };
   }
 
@@ -113,6 +128,12 @@
     isDrawing = true;
     const pos = getSigCanvasPos(e);
     drawPoints = [pos];
+    sigCtx.beginPath();
+    sigCtx.moveTo(pos.x, pos.y);
+    // Place a small dot at click position for single-tap signatures
+    sigCtx.arc(pos.x, pos.y, 1.5, 0, Math.PI * 2);
+    sigCtx.fillStyle = '#1a1a2e';
+    sigCtx.fill();
     sigCtx.beginPath();
     sigCtx.moveTo(pos.x, pos.y);
   }
@@ -135,8 +156,120 @@
   }
 
   function clearSigPad() {
-    sigCtx.clearRect(0, 0, dom.sigCanvas.width, dom.sigCanvas.height);
+    if (!sigCtx || !dom.sigCanvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    sigCtx.clearRect(0, 0, dom.sigCanvas.width / dpr, dom.sigCanvas.height / dpr);
     drawPoints = [];
+  }
+
+  // ============================================================
+  // Image Background Removal
+  // ============================================================
+  /**
+   * Removes the background color from a signature image.
+   * Uses a conservative approach to preserve the actual ink strokes.
+   * Only removes pixels that are lighter than the detected background
+   * (to protect dark signature ink from being erased).
+   */
+  function removeImageBackground(dataUrl) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        // Use a temporary canvas to process pixels
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Draw the original image
+        ctx.drawImage(img, 0, 0);
+
+        // Get all pixel data
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        // Sample corners to detect the background color
+        const corners = [
+          getPixelColor(data, 0, 0, canvas.width),
+          getPixelColor(data, canvas.width - 1, 0, canvas.width),
+          getPixelColor(data, 0, canvas.height - 1, canvas.width),
+          getPixelColor(data, canvas.width - 1, canvas.height - 1, canvas.width),
+        ];
+
+        // Find the lightest corner - signatures typically have white/light backgrounds
+        let bgColor = corners[0];
+        let maxLum = getLuminance(corners[0].r, corners[0].g, corners[0].b);
+        for (let i = 1; i < corners.length; i++) {
+          const lum = getLuminance(corners[i].r, corners[i].g, corners[i].b);
+          if (lum > maxLum) {
+            maxLum = lum;
+            bgColor = corners[i];
+          }
+        }
+
+        const bgLuminance = getLuminance(bgColor.r, bgColor.g, bgColor.b);
+
+        // Conservative threshold - only remove pixels very close to the light background
+        // This protects darker ink strokes from being erased
+        const bgTolerance = 30;
+        const featherRange = 10;
+
+        // Process each pixel
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+
+          const pixelLum = getLuminance(r, g, b);
+
+          // Only consider making a pixel transparent if it's as light or lighter than the background
+          // This is the key protection: dark ink pixels are NEVER made transparent
+          const isLighterOrEqual = pixelLum >= bgLuminance * 0.85;
+
+          // If pixel is lighter than background threshold, check color distance
+          if (isLighterOrEqual) {
+            const dist = colorDistance(r, g, b, bgColor.r, bgColor.g, bgColor.b);
+
+            if (dist < bgTolerance) {
+              // Fully transparent - this is likely background
+              data[i + 3] = 0;
+            } else if (dist < bgTolerance + featherRange) {
+              // Semi-transparent feathering for edge pixels
+              const alpha = Math.round(((dist - bgTolerance) / featherRange) * 255);
+              data[i + 3] = Math.min(255, alpha);
+            }
+            // else keep fully opaque
+          }
+          // Darker pixels than background are always kept fully opaque
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(dataUrl); // Fallback: return original
+      img.src = dataUrl;
+    });
+  }
+
+  function getPixelColor(data, x, y, width) {
+    const idx = (y * width + x) * 4;
+    return { r: data[idx], g: data[idx + 1], b: data[idx + 2] };
+  }
+
+  /**
+   * Calculates the luminance (perceived brightness) of a pixel.
+   * Uses the standard ITU-R BT.601 formula.
+   */
+  function getLuminance(r, g, b) {
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
+  function colorDistance(r1, g1, b1, r2, g2, b2) {
+    // Use a weighted Euclidean distance that approximates human perception
+    const dr = r1 - r2;
+    const dg = g1 - g2;
+    const db = b1 - b2;
+    return Math.sqrt(dr * dr * 0.3 + dg * dg * 0.59 + db * db * 0.11);
   }
 
   // ============================================================
@@ -147,6 +280,7 @@
       alert('Please draw a signature first.');
       return;
     }
+    // toDataURL('image/png') preserves transparency since canvas background is transparent
     const dataUrl = dom.sigCanvas.toDataURL('image/png');
     savedSignatures.push({ id: sigIdCounter++, dataUrl, type: 'draw' });
     clearSigPad();
@@ -155,8 +289,9 @@
 
   function loadImageFromFile(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      savedSignatures.push({ id: sigIdCounter++, dataUrl: e.target.result, type: 'image' });
+    reader.onload = async (e) => {
+      const cleanUrl = await removeImageBackground(e.target.result);
+      savedSignatures.push({ id: sigIdCounter++, dataUrl: cleanUrl, type: 'image' });
       renderSavedSignatures();
     };
     reader.readAsDataURL(file);
@@ -166,7 +301,8 @@
     const result = await ipcRenderer.invoke('esign:open-image');
     if (result) {
       const dataUrl = `data:image/${getExt(result.filePath)};base64,${result.data}`;
-      savedSignatures.push({ id: sigIdCounter++, dataUrl, type: 'image' });
+      const cleanUrl = await removeImageBackground(dataUrl);
+      savedSignatures.push({ id: sigIdCounter++, dataUrl: cleanUrl, type: 'image' });
       renderSavedSignatures();
     }
   }
@@ -348,6 +484,7 @@
 
     const img = document.createElement('img');
     img.src = sig.dataUrl;
+    img.draggable = false;
     el.appendChild(img);
 
     const removeBtn = document.createElement('button');
@@ -427,17 +564,21 @@
       let image;
       if (sig.dataUrl.startsWith('data:image/png')) {
         const pngData = base64ToBytes(sig.dataUrl.split(',')[1]);
+        // For drawn signatures, embed as PNG which supports transparency
+        // For image signatures, also use PNG to preserve transparency if possible
         image = await pdfDocLib.embedPng(pngData);
       } else {
         const jpgData = base64ToBytes(sig.dataUrl.split(',')[1]);
         image = await pdfDocLib.embedJpg(jpgData);
       }
 
+      // Draw with opacity for a more natural ink-on-paper blend
       page.drawImage(image, {
         x: pdfX,
         y: pdfY,
         width: pdfW,
         height: pdfH,
+        opacity: 0.92,
       });
     }
 
