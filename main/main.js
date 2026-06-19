@@ -91,11 +91,12 @@ app.whenReady().then(() => {
   // Build custom macOS menu bar showing "SmartPDF" instead of "Electron"
   buildMacMenu();
 
-  // Set the dock icon on macOS (separate from BrowserWindow icon)
+  // Set the dock icon on macOS (PNG works best with Electron's nativeImage)
   if (process.platform === 'darwin' && app.dock) {
     const dockIconPath = path.join(__dirname, '..', 'assets', 'logo.png');
     const dockIcon = nativeImage.createFromPath(dockIconPath);
     app.dock.setIcon(dockIcon);
+    console.log('Dock icon set from logo.png');
   }
 
   // Load all IPC handlers from the ipc-handlers directory

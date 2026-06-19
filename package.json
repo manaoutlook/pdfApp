@@ -68,7 +68,7 @@
           ]
         }
       ],
-      "icon": "assets/logo.png",
+      "icon": "assets/logo.icns",
       "category": "public.app-category.productivity",
       "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
     },

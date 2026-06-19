@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
   <defs>
-    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ea4335"/>
-      <stop offset="100%" stop-color="#d33426"/>
+      <stop offset="100%" stop-color="#c62828"/>
     </linearGradient>
   </defs>
-  <rect x="10" y="10" width="180" height="180" rx="24" fill="url(#g2)"/>
-  <g transform="translate(50,30)">
-    <path d="M50 0 L100 20 L100 70 C100 100 72 120 50 130 C28 120 0 100 0 70 L0 20 Z" fill="white"/>
-    <path d="M50 12 L88 28 L88 70 C88 96 64 114 50 120 C36 114 12 96 12 70 L12 28 Z" fill="#fce8e6"/>
-    <text x="50" y="68" font-family="Arial" font-size="32" font-weight="bold" fill="#ea4335" text-anchor="middle">PDF</text>
-    <path d="M38 90 L46 100 L62 82" stroke="#34a853" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="0" y="0" width="200" height="200" rx="40" fill="url(#bgGrad)"/>
+  <g transform="translate(100, 68)">
+    <path d="M0,-58 L58,-34 L58,24 C58,58 27,80 0,92 C-27,80 -58,58 -58,24 L-58,-34 Z" fill="white"/>
+    <path d="M0,-46 L46,-28 L46,20 C46,48 22,66 0,76 C-22,66 -46,48 -46,20 L-46,-28 Z" fill="#fce8e6"/>
+    <text x="0" y="10" font-family="Arial" font-size="36" font-weight="bold" fill="#ea4335" text-anchor="middle">PDF</text>
+    <path d="M-14,26 L-4,38 L18,16" stroke="#34a853" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-  <text x="100" y="178" font-family="Arial" font-size="13" font-weight="bold" fill="white" text-anchor="middle" letter-spacing="3">SMARTPDF</text>
+  <text x="100" y="185" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle" letter-spacing="4">SMARTPDF</text>
 </svg>
