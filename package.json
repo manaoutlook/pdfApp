@@ -87,6 +87,7 @@
           ]
         }
       ],
+      "icon": "assets/logo.png",
       "category": "Office",
       "artifactName": "${productName}-${version}-linux-${arch}.${ext}"
     },
