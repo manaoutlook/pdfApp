@@ -1,0 +1,75 @@
+<!-- ============================================================
+     SmartPDF - Preview PDF Feature
+     ============================================================ -->
+<div class="feature-page">
+  <!-- Main PDF Viewer -->
+  <div class="feature-main">
+    <!-- PDF Drop Area (shown when no PDF loaded) -->
+    <div class="pdf-drop-area drop-zone" id="preview-pdfDropArea">
+      <div class="icon">📄</div>
+      <h2>Drop PDF file here</h2>
+      <p>or click "Open PDF" to browse files</p>
+    </div>
+
+    <!-- Recent Files (shown when no PDF loaded, after drop zone) -->
+    <div class="preview-recent-section" id="preview-recentSection" style="display:none;">
+      <div class="preview-recent-header">
+        <span class="preview-recent-title">🕐 Recent Files</span>
+        <button class="preview-recent-clear" id="preview-recentClear" title="Clear history">Clear</button>
+      </div>
+      <div class="preview-recent-list" id="preview-recentList">
+        <!-- Recent file items rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- PDF Page Container (shown after PDF loaded) -->
+    <div class="pdf-page-container hidden" id="preview-pdfPageContainer">
+      <div class="pdf-toolbar-inline">
+        <button id="preview-openPdfBtn" class="btn-primary">📄 Open PDF</button>
+        <span id="preview-fileName" class="file-name"></span>
+        <div class="spacer"></div>
+      </div>
+      <!-- Continuous scroll container rendered by shared ContinuousPdfViewer -->
+      <div class="pdf-pages-scroll" id="preview-pdfPagesScroll"></div>
+      <div class="page-info" id="preview-pageInfoBottom"></div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="feature-sidebar" style="position:relative;">
+    <button class="feature-sidebar-toggle" id="preview-sidebarToggle" title="Collapse Sidebar">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
+    <!-- Document Info -->
+    <div class="section">
+      <div class="section-title">📋 Document Info</div>
+      <div class="preview-info-list" id="preview-infoList">
+        <div class="preview-info-row">
+          <span class="preview-info-label">File Name</span>
+          <span class="preview-info-value" id="preview-infoFileName">—</span>
+        </div>
+        <div class="preview-info-row">
+          <span class="preview-info-label">Pages</span>
+          <span class="preview-info-value" id="preview-infoPages">—</span>
+        </div>
+        <div class="preview-info-row">
+          <span class="preview-info-label">Current Page</span>
+          <span class="preview-info-value" id="preview-infoCurrentPage">—</span>
+        </div>
+        <div class="preview-info-row">
+          <span class="preview-info-label">Zoom</span>
+          <span class="preview-info-value" id="preview-infoZoom">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="section" style="background:#f8f9fa;padding:10px;border-radius:6px;font-size:12px;color:#555;line-height:1.5">
+      <strong>💡 How to use:</strong><br>
+      1. Open / Drop a PDF file<br>
+      2. Use the status bar to navigate<br>
+      3. Zoom with controls or Ctrl+Scroll
+    </div>
+  </div>

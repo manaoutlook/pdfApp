@@ -15,6 +15,17 @@ body {
   color: #333;
   overflow: hidden;
   height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   Main Layout
+   ============================================================ */
+.main-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ============================================================
@@ -95,12 +106,40 @@ body {
   gap: 8px;
 }
 
+
 /* ============================================================
-   Main Layout
+   Sidebar Toggle Buttons (shared)
    ============================================================ */
-.main-layout {
+.sidebar-toggle-btn {
+  position: absolute;
+  right: 0;
+  top: 16px;
   display: flex;
-  height: calc(100vh - 52px);
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #dadce0;
+  background: #fff;
+  color: #666;
+  cursor: pointer;
+  border-radius: 4px 0 0 4px;
+  border-right: none;
+  padding: 0;
+  transition: all 0.15s;
+  z-index: 5;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background: #e8f0fe;
+  color: #1a73e8;
+  border-color: #a8c7fa;
+}
+
+.sidebar-toggle-btn svg {
+  pointer-events: none;
+  transition: transform 0.2s ease;
 }
 
 /* ============================================================
@@ -111,12 +150,94 @@ body {
   background: #fff;
   border-right: 1px solid #dadce0;
   padding: 16px;
+  padding-right: 24px;
   overflow-y: auto;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  transition: width 0.2s ease, padding 0.2s ease;
+  position: relative;
+}
+
+/* Collapsed left sidebar */
+.page-nav-sidebar.collapsed {
+  width: 0;
+  padding: 16px 0;
+  overflow: visible;
+}
+
+.page-nav-sidebar.collapsed .page-nav-section-title,
+.page-nav-sidebar.collapsed .page-nav-page-info,
+.page-nav-sidebar.collapsed .page-nav-thumbnails {
+  display: none;
+}
+
+.page-nav-sidebar.collapsed .sidebar-toggle-btn {
+  position: absolute;
+  left: 0;
+  top: 16px;
+  border-radius: 0 4px 4px 0;
+  border-left: none;
+}
+
+.page-nav-sidebar.collapsed .sidebar-toggle-btn svg {
+  transform: rotate(180deg);
+}
+
+/* Feature sidebar toggle — sits on the left edge of the sidebar */
+.feature-sidebar {
+  position: relative;
+  overflow: visible !important;
+}
+
+.feature-sidebar-toggle {
+  position: absolute;
+  left: -24px;
+  top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #dadce0;
+  border-right: none;
+  background: #fff;
+  color: #666;
+  cursor: pointer;
+  border-radius: 4px 0 0 4px;
+  padding: 0;
+  transition: all 0.15s;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.feature-sidebar-toggle:hover {
+  background: #e8f0fe;
+  color: #1a73e8;
+  border-color: #a8c7fa;
+}
+
+.feature-sidebar-toggle svg {
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+/* Collapsed feature sidebar */
+.feature-sidebar.collapsed {
+  width: 0;
+  padding: 0;
+  min-width: 0;
+  border-left: none;
+}
+
+.feature-sidebar.collapsed .feature-sidebar-toggle {
+  left: -24px;
+}
+
+.feature-sidebar-toggle.collapsed-icon svg {
+  transform: rotate(180deg);
 }
 
 .page-nav-section-title {
@@ -306,7 +427,20 @@ button {
 .btn-danger:hover { background: #c53929; }
 
 /* ============================================================
-   Shared PDF Tab Bar - Used by all PDF features (eSign, Compress, Convert, Split, Merge, etc.)
+   Global Tab Bar (persists across all features, above main-layout)
+   ============================================================ */
+.global-tab-bar {
+  display: flex;
+  align-items: center;
+  background: #f0f0f0;
+  border-bottom: 1px solid #dadce0;
+  min-height: 36px;
+  overflow: hidden;
+  padding: 0 4px;
+}
+
+/* ============================================================
+   Shared PDF Tab Bar (style kept for backwards compat, used inline)
    ============================================================ */
 .pdf-tab-bar {
   display: flex;
@@ -476,6 +610,128 @@ button {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+/* ============================================================
+   Continuous PDF Scroll Viewer (shared)
+   Used by Preview, eSign, Compress (and any future viewer feature)
+   ============================================================ */
+.pdf-pages-scroll {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  overflow-y: auto;
+  overflow-x: auto;
+  flex: 1;
+  scroll-behavior: smooth;
+  padding: 8px 0;
+}
+
+.pdf-page-wrapper {
+  position: relative;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  background: white;
+  margin: 0 auto 16px auto;
+  display: inline-block;
+}
+
+.pdf-page-wrapper canvas {
+  display: block;
+}
+
+.pdf-page-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  cursor: crosshair;
+}
+
+/* ============================================================
+   Global Status Bar (persists across all features)
+   ============================================================ */
+.global-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border-top: 1px solid #dadce0;
+  padding: 6px 16px;
+  height: 40px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.global-status-bar.hidden {
+  display: none;
+}
+
+.status-bar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.status-bar-divider {
+  width: 1px;
+  height: 20px;
+  background: #dadce0;
+  margin: 0 6px;
+}
+
+.status-bar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+  padding: 0;
+  position: relative;
+}
+
+/* Ensure SVG inside status bar buttons doesn't intercept pointer events (tooltips) */
+.status-bar-btn svg {
+  pointer-events: none;
+}
+
+.status-bar-btn:hover:not(:disabled) {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.status-bar-btn:active:not(:disabled) {
+  background: #d2e3fc;
+}
+
+.status-bar-btn:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.status-bar-page-info {
+  font-size: 12px;
+  color: #555;
+  font-weight: 500;
+  padding: 0 6px;
+  white-space: nowrap;
+  user-select: none;
+  min-width: 90px;
+  text-align: center;
+}
+
+.status-bar-zoom-label {
+  font-size: 12px;
+  color: #333;
+  font-weight: 600;
+  padding: 0 6px;
+  white-space: nowrap;
+  user-select: none;
+  min-width: 42px;
+  text-align: center;
+}
 
 /* ============================================================
    Utility Classes

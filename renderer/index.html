@@ -17,7 +17,11 @@
     <img src="../assets/logo2-pdf-shield-red.svg" alt="SmartPDF Logo" class="toolbar-logo"/>
     <h1>SmartPDF</h1>
     <div class="toolbar-nav" id="toolbarNav">
-      <button class="toolbar-nav-btn active" data-feature="esign">
+      <button class="toolbar-nav-btn active" data-feature="preview">
+        <span class="nav-icon">🔍</span>
+        <span class="nav-label">Preview</span>
+      </button>
+      <button class="toolbar-nav-btn" data-feature="esign">
         <span class="nav-icon">✍️</span>
         <span class="nav-label">eSign</span>
       </button>
@@ -30,10 +34,20 @@
     <div id="featureMeta" class="feature-meta"></div>
   </div>
 
+  <!-- Global PDF Tab Bar (persists across features) -->
+  <div class="global-tab-bar" id="globalTabBar" style="display:none;">
+    <div class="pdf-tab-scroll" id="globalTabScroll"></div>
+  </div>
+
   <!-- Main Layout -->
   <div class="main-layout">
     <!-- Page Navigation Sidebar with thumbnails -->
     <aside class="page-nav-sidebar" id="pageNavSidebar">
+      <button class="sidebar-toggle-btn" id="pageNavToggle" title="Toggle Page Navigation Sidebar">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+        </svg>
+      </button>
       <div class="page-nav-section-title">Page Navigation</div>
       <div class="page-nav-page-info" id="pageNavInfo">Page — / —</div>
       <div class="page-nav-thumbnails" id="pageNavThumbnails">
@@ -45,6 +59,51 @@
     <main class="content" id="content">
       <!-- Feature content loads here -->
     </main>
+  </div>
+
+  <!-- Global Status Bar (persists across features) -->
+  <div class="global-status-bar hidden" id="globalStatusBar">
+    <!-- Pagination -->
+    <div class="status-bar-group">
+      <button class="status-bar-btn" id="statusBtnPrevPage" title="Previous Page (Arrow Up)" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
+      </button>
+      <span class="status-bar-page-info" id="statusPageInfo">Page — / —</span>
+      <button class="status-bar-btn" id="statusBtnNextPage" title="Next Page (Arrow Down)" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+      </button>
+    </div>
+
+    <div class="status-bar-divider"></div>
+
+    <!-- Zoom Controls -->
+    <div class="status-bar-group">
+      <button class="status-bar-btn" id="statusBtnZoomOut" title="Zoom Out (Ctrl+-)" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/></svg>
+      </button>
+      <span class="status-bar-zoom-label" id="statusZoomLabel">100%</span>
+      <button class="status-bar-btn" id="statusBtnZoomIn" title="Zoom In (Ctrl+=)" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+      </button>
+    </div>
+
+    <div class="status-bar-divider"></div>
+
+    <!-- Fit Controls -->
+    <div class="status-bar-group">
+      <button class="status-bar-btn" id="statusBtnFitPage" title="Fit Page" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="14" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="4" y="4" width="8" height="8" rx="0.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+      </button>
+      <button class="status-bar-btn" id="statusBtnFitHeight" title="Fit Height" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="1" width="10" height="14" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="6" y1="1" x2="6" y2="0" stroke="currentColor" stroke-width="1"/><line x1="10" y1="1" x2="10" y2="0" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <button class="status-bar-btn" id="statusBtnFitWidth" title="Fit Width" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="14" height="10" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="1" y1="7" x2="0" y2="7" stroke="currentColor" stroke-width="1"/><line x1="15" y1="7" x2="16" y2="7" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <button class="status-bar-btn" id="statusBtnActualSize" title="Actual Size 1:1 (Ctrl+0)" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><text x="2" y="12" font-size="10" font-weight="bold" fill="currentColor">1:1</text></svg>
+      </button>
+    </div>
   </div>
 
   <script src="main.js"></script>

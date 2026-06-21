@@ -13,10 +13,6 @@
 
     <!-- PDF Page Container (shown after PDF loaded) -->
     <div class="pdf-page-container hidden" id="esign-pdfPageContainer">
-      <!-- Shared PDF Tab Bar (uses .pdf-tab-bar / .pdf-tab-scroll / .pdf-tab from global.css) -->
-      <div class="pdf-tab-bar" id="esign-tabBar">
-        <div class="pdf-tab-scroll" id="esign-tabScroll"></div>
-      </div>
       <div class="pdf-toolbar-inline">
         <button id="esign-openPdfBtn" class="btn-primary">📄 Open PDF</button>
         <span id="esign-fileName" class="file-name"></span>
@@ -29,7 +25,12 @@
   </div>
 
   <!-- Right Sidebar -->
-  <div class="feature-sidebar">
+  <div class="feature-sidebar" style="position:relative;">
+    <button class="feature-sidebar-toggle" id="esign-sidebarToggle" title="Collapse Sidebar">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
     <!-- Image Signature -->
     <div class="section">
       <div class="section-title">🖼️ Image Signature</div>

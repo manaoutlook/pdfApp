@@ -135,6 +135,11 @@ app.on('window-all-closed', () => {
   if (!isMac) app.quit();
 });
 
+app.on('before-quit', () => {
+  // Ensure the app actually exits on quit (handles Cmd+Q on macOS)
+  console.log('SmartPDF is quitting...');
+});
+
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });

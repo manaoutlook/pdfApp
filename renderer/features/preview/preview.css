@@ -1,0 +1,169 @@
+/* ============================================================
+   SmartPDF - Preview PDF Feature Styles
+   ============================================================ */
+
+/* ============================================================
+   PDF viewer inline toolbar
+   ============================================================ */
+.pdf-toolbar-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  flex-wrap: wrap;
+}
+
+.pdf-toolbar-inline .spacer { flex: 1; }
+
+/* PDF page container */
+.pdf-page-container {
+  position: relative;
+  box-shadow: none;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  width: 100%;
+}
+
+.page-info {
+  text-align: center;
+  padding: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* ============================================================
+   Document Info Sidebar
+   ============================================================ */
+.preview-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preview-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.preview-info-row:last-child {
+  border-bottom: none;
+}
+
+.preview-info-label {
+  font-size: 12px;
+  color: #888;
+}
+
+.preview-info-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Recent Files Section
+   ============================================================ */
+.preview-recent-section {
+  width: 100%;
+  max-width: 500px;
+  margin-top: 24px;
+}
+
+.preview-recent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.preview-recent-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.preview-recent-clear {
+  font-size: 11px;
+  color: #999;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: all 0.15s;
+}
+
+.preview-recent-clear:hover {
+  color: #ea4335;
+  background: #fff0f0;
+}
+
+.preview-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.preview-recent-item:hover {
+  border-color: #a8c7fa;
+  background: #f8faff;
+}
+
+.preview-recent-item-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.preview-recent-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-recent-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-recent-item-path {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.preview-recent-item-time {
+  font-size: 11px;
+  color: #bbb;
+  white-space: nowrap;
+  flex-shrink: 0;
+}

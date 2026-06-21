@@ -13,19 +13,14 @@
 
     <!-- PDF Page Container (shown after PDF loaded) -->
     <div class="pdf-page-container hidden" id="compress-pdfPageContainer">
-      <!-- Shared PDF Tab Bar -->
-      <div class="pdf-tab-bar" id="compress-tabBar">
-        <div class="pdf-tab-scroll" id="compress-tabScroll"></div>
-      </div>
       <div class="pdf-toolbar-inline">
         <button id="compress-openPdfBtn" class="btn-primary">📄 Open PDF</button>
         <span id="compress-fileName" class="file-name"></span>
         <div class="spacer"></div>
         <button id="compress-savePdfBtn" class="btn-success" disabled>💾 Save Compressed PDF</button>
       </div>
-      <div style="position:relative;display:inline-block;margin-top:12px">
-        <canvas id="compress-pdf-canvas"></canvas>
-      </div>
+      <!-- Continuous scroll container rendered by shared ContinuousPdfViewer -->
+      <div class="pdf-pages-scroll" id="compress-pdfPagesScroll"></div>
       <div class="page-info" id="compress-pageInfoBottom"></div>
     </div>
 
@@ -42,7 +37,12 @@
   </div>
 
   <!-- Right Sidebar -->
-  <div class="feature-sidebar">
+  <div class="feature-sidebar" style="position:relative;">
+    <button class="feature-sidebar-toggle" id="compress-sidebarToggle" title="Collapse Sidebar">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
     <!-- Compression Profile -->
     <div class="section">
       <div class="section-title">🎯 Compression Profile</div>
