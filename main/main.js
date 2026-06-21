@@ -12,63 +12,102 @@ const fs = require('fs');
 
 let mainWindow;
 
-// Build a custom macOS menu bar that shows "SmartPDF" instead of "Electron"
-function buildMacMenu() {
-  if (!isMac) return;
+// Build a cross-platform application menu that shows "SmartPDF" instead of "Electron"
+function buildAppMenu() {
+  // Shared "Edit" menu — identical across all platforms
+  const editMenu = {
+    label: 'Edit',
+    submenu: [
+      { role: 'undo' },
+      { role: 'redo' },
+      { type: 'separator' },
+      { role: 'cut' },
+      { role: 'copy' },
+      { role: 'paste' },
+      { role: 'selectAll' },
+    ],
+  };
 
-  const template = [
-    {
-      label: 'SmartPDF',
-      submenu: [
-        { label: 'About SmartPDF', role: 'about' },
-        { type: 'separator' },
-        { role: 'services' },
-        { type: 'separator' },
-        { role: 'hide' },
-        { role: 'hideOthers' },
-        { role: 'unhide' },
-        { type: 'separator' },
-        { role: 'quit' },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' },
-      ],
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' },
-      ],
-    },
-    {
-      label: 'Window',
-      submenu: [
-        { role: 'minimize' },
-        { role: 'zoom' },
-        { type: 'separator' },
-        { role: 'front' },
-      ],
-    },
-  ];
+  // Shared "View" menu — identical across all platforms
+  const viewMenu = {
+    label: 'View',
+    submenu: [
+      { role: 'reload' },
+      { role: 'forceReload' },
+      { role: 'toggleDevTools' },
+      { type: 'separator' },
+      { role: 'resetZoom' },
+      { role: 'zoomIn' },
+      { role: 'zoomOut' },
+      { type: 'separator' },
+      { role: 'togglefullscreen' },
+    ],
+  };
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  if (isMac) {
+    // macOS menu — standard macOS patterns (app menu + Window menu)
+    const template = [
+      {
+        label: 'SmartPDF',
+        submenu: [
+          { label: 'About SmartPDF', role: 'about' },
+          { type: 'separator' },
+          { role: 'services' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' },
+        ],
+      },
+      editMenu,
+      viewMenu,
+      {
+        label: 'Window',
+        submenu: [
+          { role: 'minimize' },
+          { role: 'zoom' },
+          { type: 'separator' },
+          { role: 'front' },
+        ],
+      },
+    ];
+    Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  } else {
+    // Windows / Linux menu — File/Edit/View/Help pattern
+    const template = [
+      {
+        label: 'File',
+        submenu: [
+          { role: 'quit', label: 'Exit' },
+        ],
+      },
+      editMenu,
+      viewMenu,
+      {
+        label: 'Help',
+        submenu: [
+          {
+            label: 'About SmartPDF',
+            accelerator: 'F1',
+            click: () => {
+              const { dialog } = require('electron');
+              dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                title: 'About SmartPDF',
+                message: 'SmartPDF v1.0.0',
+                detail: 'Desktop PDF application with preview, eSign, and compression.\n\nCross-platform — runs on Windows, macOS, and Linux.',
+              });
+            },
+          },
+          { type: 'separator' },
+          { role: 'toggleDevTools', label: 'Developer Tools' },
+        ],
+      },
+    ];
+    Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  }
 }
 
 function createWindow() {
@@ -96,8 +135,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // Build custom macOS menu bar showing "SmartPDF" instead of "Electron"
-  buildMacMenu();
+  // Build cross-platform application menu showing "SmartPDF" instead of "Electron"
+  buildAppMenu();
 
   // Set the dock icon on macOS (PNG works best with Electron's nativeImage)
   if (isMac && app.dock) {
