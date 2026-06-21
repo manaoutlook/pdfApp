@@ -393,13 +393,7 @@
       alert(`Maximum of ${window.SmartPDF.MAX_TABS} PDFs can be open at once.`);
       return;
     }
-    pdfTabs.openFileFromDrop(file, (loadedTab) => {
-      // onTabSwitched will handle rendering
-    });
-  }
-
-  function showPdfView() {
-    // Handled by PdfTabs
+    pdfTabs.openFileFromDrop(file);
   }
 
   // ============================================================
@@ -591,23 +585,6 @@
       await page.render({ canvasContext: ctx, viewport }).promise;
     } catch (err) {
       // Silently ignore thumbnail render errors
-    }
-  }
-
-  // ============================================================
-  // Page Navigation (kept for internal use, but sidebar uses pdfTabs directly)
-  // ============================================================
-  function prevPage() {
-    const tab = getActiveTab();
-    if (tab && pdfTabs.prevPage()) {
-      renderPage(tab);
-    }
-  }
-
-  function nextPage() {
-    const tab = getActiveTab();
-    if (tab && pdfTabs.nextPage()) {
-      renderPage(tab);
     }
   }
 
@@ -826,11 +803,10 @@
       e.preventDefault();
       const files = e.dataTransfer.files;
       if (files.length > 0 && pdfTabs) {
-        const PdfTabs = window.SmartPDF.PdfTabs;
         for (const file of files) {
           if (file.name.endsWith('.pdf')) {
-            if (pdfTabs.getTabCount() >= PdfTabs.MAX_TABS) {
-              alert(`Maximum of ${PdfTabs.MAX_TABS} PDFs can be open at once.`);
+            if (pdfTabs.getTabCount() >= window.SmartPDF.MAX_TABS) {
+              alert(`Maximum of ${window.SmartPDF.MAX_TABS} PDFs can be open at once.`);
               break;
             }
             pdfTabs.openFileFromDrop(file);
@@ -881,9 +857,6 @@
 
     console.log('eSign feature initialized with shared PdfTabs');
   }
-
-  if (!window.__featureInit) window.__featureInit = {};
-  window.__featureInit.esign = init;
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     init();

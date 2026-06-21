@@ -24,13 +24,9 @@ window.SmartPDF.getDevToolsShortcut = function() {
 const features = {
   esign:   { label: 'eSign',   path: 'features/esign/esign.html' },
   compress:{ label: 'Compress', path: 'features/compress/compress.html' },
-  convert: { label: 'Convert',  path: 'features/convert/convert.html' },
-  split:   { label: 'Split',    path: 'features/split/split.html' },
-  merge:   { label: 'Merge',    path: 'features/merge/merge.html' },
 };
 
 let currentFeature = 'esign';
-let loadedScripts = {};
 let sharedLoaded = false;
 
 // Page navigation state (features register via setPageNav)
@@ -112,21 +108,9 @@ function navigateTo(feature) {
 
       // Ensure shared modules are loaded before feature JS
       loadSharedModules().then(() => {
-        // Load and execute feature-specific JS
-        if (loadedScripts[feature]) {
-          loadedScripts[feature]();
-        } else {
-          const scriptPath = `features/${feature}/${feature}.js`;
-          const script = document.createElement('script');
-          script.src = scriptPath;
-          script.onload = () => {
-            if (window.__featureInit && window.__featureInit[feature]) {
-              loadedScripts[feature] = window.__featureInit[feature];
-              window.__featureInit[feature]();
-            }
-          };
-          document.body.appendChild(script);
-        }
+        const script = document.createElement('script');
+        script.src = `features/${feature}/${feature}.js`;
+        document.body.appendChild(script);
       });
     })
     .catch(err => {
@@ -234,7 +218,6 @@ document.addEventListener('keydown', (e) => {
 // ============================================================
 // Expose API for feature modules
 // ============================================================
-if (!window.SmartPDF) window.SmartPDF = {};
 window.SmartPDF.setPageNav = setPageNav;
 window.SmartPDF.updatePageNavSidebar = updatePageNavSidebar;
 

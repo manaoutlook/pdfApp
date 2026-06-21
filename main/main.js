@@ -6,8 +6,6 @@ app.setName('SmartPDF');
 // Platform detection
 const isMac = process.platform === 'darwin';
 const isWindows = process.platform === 'win32';
-const isLinux = process.platform === 'linux';
-console.log(`SmartPDF starting on ${process.platform} (macOS: ${isMac}, Windows: ${isWindows}, Linux: ${isLinux})`);
 
 const path = require('path');
 const fs = require('fs');
@@ -16,7 +14,6 @@ let mainWindow;
 
 // Build a custom macOS menu bar that shows "SmartPDF" instead of "Electron"
 function buildMacMenu() {
-  const isMac = process.platform === 'darwin';
   if (!isMac) return;
 
   const template = [
@@ -108,16 +105,6 @@ app.whenReady().then(() => {
     const dockIcon = nativeImage.createFromPath(dockIconPath);
     app.dock.setIcon(dockIcon);
     console.log('Mac Dock icon set from logo.png');
-  }
-  
-  // On Linux, set the app icon for the taskbar / launcher
-  if (isLinux) {
-    // Linux desktop environments use the window icon set in BrowserWindow;
-    // additionally set the app-level icon for Unity/GNOME dash
-    if (app.setAppUserModelId) {
-      // Only on Windows/Linux electron
-    }
-    console.log('Linux detected: Window icon configured from assets/logo.png');
   }
   
   // On Windows, set the app user model ID for proper taskbar grouping

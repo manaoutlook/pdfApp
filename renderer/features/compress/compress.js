@@ -244,23 +244,6 @@
   }
 
   // ============================================================
-  // Page Navigation (kept for internal use, but sidebar uses pdfTabs directly)
-  // ============================================================
-  function prevPage() {
-    const tab = getActiveTab();
-    if (tab && pdfTabs.prevPage()) {
-      renderPreview(tab);
-    }
-  }
-
-  function nextPage() {
-    const tab = getActiveTab();
-    if (tab && pdfTabs.nextPage()) {
-      renderPreview(tab);
-    }
-  }
-
-  // ============================================================
   // Page Thumbnails (for sidebar)
   // ============================================================
   function renderThumbnails(container) {
@@ -749,9 +732,6 @@
     console.log('[compress] Initialized — DPI-based compression engine ready');
     console.log('[compress] Profiles: balanced (150 DPI), maximum (96 DPI), lossless (no rasterize), custom (slider)');
   }
-
-  if (!window.__featureInit) window.__featureInit = {};
-  window.__featureInit.compress = init;
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     init();
