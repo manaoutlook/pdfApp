@@ -1,0 +1,118 @@
+<!-- ============================================================
+     SmartPDF - Merge Feature
+     Drop zone always visible — user can keep adding files.
+     Preview shows the currently selected file below.
+     ============================================================ -->
+<div class="feature-page">
+  <!-- Main Area -->
+  <div class="feature-main">
+    <!-- Drop Zone (always visible — accepts drag/drop and click) -->
+    <div class="pdf-drop-area drop-zone" id="merge-pdfDropArea">
+      <div class="icon">➕</div>
+      <h2 id="merge-dropTitle">Drop PDF files here</h2>
+      <p>or click to browse and add files</p>
+      <button id="merge-addPdfBtn" class="btn-primary" style="margin-top:12px;">📂 Add PDFs</button>
+    </div>
+
+    <!-- PDF Preview Container (shown when a file is selected for preview) -->
+    <div class="pdf-page-container hidden" id="merge-pdfPageContainer">
+      <div class="pdf-toolbar-inline">
+        <span id="merge-previewFileName" class="file-name"></span>
+        <div class="spacer"></div>
+        <button id="merge-savePdfBtn" class="btn-success" disabled>💾 Save Merged PDF</button>
+      </div>
+      <!-- Continuous scroll container for preview -->
+      <div class="pdf-pages-scroll" id="merge-pdfPagesScroll"></div>
+      <div class="page-info" id="merge-pageInfoBottom"></div>
+    </div>
+
+    <!-- Progress overlay -->
+    <div class="merge-progress-overlay hidden" id="merge-progressOverlay">
+      <div class="merge-progress-card">
+        <div class="merge-progress-spinner"></div>
+        <div class="merge-progress-text" id="merge-progressText">Merging PDFs...</div>
+        <div class="merge-progress-bar">
+          <div class="merge-progress-fill" id="merge-progressFill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="feature-sidebar" style="position:relative;">
+    <button class="feature-sidebar-toggle" id="merge-sidebarToggle" title="Collapse Sidebar">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
+
+    <!-- File List -->
+    <div class="section">
+      <div class="section-title">📋 Files to Merge</div>
+      <div class="merge-file-list" id="merge-fileList">
+        <div class="merge-empty-state" id="merge-emptyState">
+          <p>No files added yet.</p>
+          <p style="font-size:11px;color:#999;">Add PDFs via drag-and-drop or the button above.</p>
+        </div>
+      </div>
+      <div class="merge-file-stats hidden" id="merge-fileStats">
+        <div class="merge-stat-row">
+          <span class="merge-stat-label">Total Files</span>
+          <span class="merge-stat-value" id="merge-totalFiles">0</span>
+        </div>
+        <div class="merge-stat-row">
+          <span class="merge-stat-label">Total Pages</span>
+          <span class="merge-stat-value" id="merge-totalPages">0</span>
+        </div>
+        <div class="merge-stat-row">
+          <span class="merge-stat-label">Total Size</span>
+          <span class="merge-stat-value" id="merge-totalSize">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reorder Controls -->
+    <div class="section hidden" id="merge-reorderSection">
+      <div class="section-title">↕️ Reorder Files</div>
+      <p style="font-size:11px;color:#888;margin:0 0 8px 0;">Click to select a file, then reorder or remove.</p>
+      <div style="display:flex;gap:8px;">
+        <button id="merge-moveUpBtn" class="btn-secondary" style="flex:1;padding:8px;font-size:12px;" disabled>⬆ Move Up</button>
+        <button id="merge-moveDownBtn" class="btn-secondary" style="flex:1;padding:8px;font-size:12px;" disabled>⬇ Move Down</button>
+      </div>
+      <button id="merge-removeBtn" class="btn-secondary" style="width:100%;padding:8px;font-size:12px;margin-top:6px;color:#ea4335;" disabled>🗑 Remove Selected</button>
+    </div>
+
+    <!-- Merge Options -->
+    <div class="section">
+      <div class="section-title">⚙️ Merge Options</div>
+      <label class="merge-checkbox-label">
+        <input type="checkbox" id="merge-addBookmarks" checked>
+        <span>Add bookmarks for each source file</span>
+      </label>
+      <label class="merge-checkbox-label">
+        <input type="checkbox" id="merge-addBlankPage" checked>
+        <span>Add blank page between files</span>
+      </label>
+    </div>
+
+    <!-- Merge Action -->
+    <div class="section">
+      <button id="merge-performMergeBtn" class="btn-primary" style="width:100%;padding:12px;font-size:14px" disabled>🔗 Merge PDFs</button>
+    </div>
+
+    <!-- Privacy Badge -->
+    <div class="merge-privacy-badge">
+      🔒 Your files never leave your computer
+    </div>
+
+    <!-- Instructions -->
+    <div class="section" style="background:#f8f9fa;padding:10px;border-radius:6px;font-size:12px;color:#555;line-height:1.5">
+      <strong>💡 How to use:</strong><br>
+      1. Add PDFs — drag multiple files or use "Add PDFs"<br>
+      2. Select and reorder files in the list<br>
+      3. Choose merge options<br>
+      4. Click "Merge PDFs" to combine<br>
+      5. Save your merged PDF
+    </div>
+  </div>
+</div>
