@@ -94,7 +94,7 @@
     "artifactName": "${productName}-${version}-win-${arch}.${ext}"
   },
   "keywords": [],
-  "author": "",
+  "author": "SmartPDF <hello@smartpdf.app>",
   "license": "ISC",
   "devDependencies": {
     "electron": "^42.4.0",
