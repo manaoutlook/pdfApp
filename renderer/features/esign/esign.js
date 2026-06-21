@@ -40,12 +40,9 @@
       pdfPageContainer: document.getElementById('esign-pdfPageContainer'),
       pdfCanvas: document.getElementById('esign-pdf-canvas'),
       sigOverlay: document.getElementById('esign-signature-overlay'),
-      pageInfo: document.getElementById('esign-pageInfo'),
       pageInfoBottom: document.getElementById('esign-pageInfoBottom'),
       fileName: document.getElementById('esign-fileName'),
       openPdfBtn: document.getElementById('esign-openPdfBtn'),
-      prevPageBtn: document.getElementById('esign-prevPageBtn'),
-      nextPageBtn: document.getElementById('esign-nextPageBtn'),
       savePdfBtn: document.getElementById('esign-savePdfBtn'),
       sigCanvas: document.getElementById('esign-sig-canvas'),
       clearSigBtn: document.getElementById('esign-clearSigBtn'),
@@ -96,6 +93,10 @@
     dom.pdfDropArea.classList.add('hidden');
     updateTabInfo(tab);
     renderPage(tab);
+    // Sync the global page navigation sidebar
+    if (typeof window.SmartPDF.updatePageNavSidebar === 'function') {
+      window.SmartPDF.updatePageNavSidebar();
+    }
   }
 
   function onTabClosed(tabId) {
@@ -104,15 +105,22 @@
       dom.pdfPageContainer.classList.add('hidden');
       dom.pdfDropArea.classList.remove('hidden');
     }
+    // Sync the global page navigation sidebar
+    if (typeof window.SmartPDF.updatePageNavSidebar === 'function') {
+      window.SmartPDF.updatePageNavSidebar();
+    }
   }
 
   function onDocumentLoaded(tab) {
     updateTabInfo(tab);
+    // Sync the global page navigation sidebar
+    if (typeof window.SmartPDF.updatePageNavSidebar === 'function') {
+      window.SmartPDF.updatePageNavSidebar();
+    }
   }
 
   function updateTabInfo(tab) {
     const info = `Page ${tab.currentPage} / ${tab.totalPages}`;
-    dom.pageInfo.textContent = info;
     dom.pageInfoBottom.textContent = info;
     dom.fileName.textContent = `📄 ${tab.fileName}`;
     dom.savePdfBtn.disabled = false;
@@ -540,7 +548,54 @@
   }
 
   // ============================================================
-  // Page Navigation
+  // Page Thumbnails (for sidebar)
+  // ============================================================
+  function renderThumbnails(container) {
+    const tab = getActiveTab();
+    if (!tab || !tab.pdfDoc) return;
+
+    const thumbScale = 0.15; // Small scale for thumbnails
+    const totalPages = tab.totalPages;
+    const activePage = tab.currentPage;
+
+    for (let i = 1; i <= totalPages; i++) {
+      const item = document.createElement('div');
+      item.className = 'page-nav-thumb-item' + (i === activePage ? ' active' : '');
+      item.dataset.page = i;
+
+      const canvas = document.createElement('canvas');
+      canvas.className = 'page-nav-thumb-canvas';
+      canvas.width = 160;
+      canvas.height = 200;
+      item.appendChild(canvas);
+
+      const label = document.createElement('div');
+      label.className = 'page-nav-thumb-label';
+      label.textContent = `Page ${i}`;
+      item.appendChild(label);
+
+      container.appendChild(item);
+
+      // Render thumbnail asynchronously
+      renderThumbnailPage(tab, i, canvas);
+    }
+  }
+
+  async function renderThumbnailPage(tab, pageNum, canvas) {
+    try {
+      const page = await tab.pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 0.15 });
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+    } catch (err) {
+      // Silently ignore thumbnail render errors
+    }
+  }
+
+  // ============================================================
+  // Page Navigation (kept for internal use, but sidebar uses pdfTabs directly)
   // ============================================================
   function prevPage() {
     const tab = getActiveTab();
@@ -784,9 +839,7 @@
     dom.pdfDropArea.addEventListener('click', openPdfDialog);
     dom.openPdfBtn.addEventListener('click', openPdfDialog);
 
-    // Page navigation
-    dom.prevPageBtn.addEventListener('click', prevPage);
-    dom.nextPageBtn.addEventListener('click', nextPage);
+    // Page navigation is handled by the global sidebar via window.SmartPDF.setPageNav
 
     dom.savePdfBtn.addEventListener('click', saveSignedPdf);
 
@@ -814,6 +867,15 @@
     setupGlobalEvents();
     bindEvents();
     resizeSigCanvas();
+
+    // Register with global page navigation sidebar
+    if (typeof window.SmartPDF.setPageNav === 'function') {
+      window.SmartPDF.setPageNav(pdfTabs, () => {
+        const tab = getActiveTab();
+        if (tab) renderPage(tab);
+      }, renderThumbnails);
+    }
+
     console.log('eSign feature initialized with shared PdfTabs');
   }
 

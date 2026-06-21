@@ -12,36 +12,43 @@
   <div class="toolbar">
     <img src="../assets/logo2-pdf-shield-red.svg" alt="SmartPDF Logo" class="toolbar-logo"/>
     <h1>SmartPDF</h1>
+    <div class="toolbar-nav" id="toolbarNav">
+      <button class="toolbar-nav-btn active" data-feature="esign">
+        <span class="nav-icon">✍️</span>
+        <span class="nav-label">eSign</span>
+      </button>
+      <button class="toolbar-nav-btn" data-feature="compress">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">Compress</span>
+      </button>
+      <button class="toolbar-nav-btn" data-feature="convert">
+        <span class="nav-icon">🔄</span>
+        <span class="nav-label">Convert</span>
+      </button>
+      <button class="toolbar-nav-btn" data-feature="split">
+        <span class="nav-icon">✂️</span>
+        <span class="nav-label">Split</span>
+      </button>
+      <button class="toolbar-nav-btn" data-feature="merge">
+        <span class="nav-icon">📑</span>
+        <span class="nav-label">Merge</span>
+      </button>
+    </div>
     <div class="spacer"></div>
     <div id="featureMeta" class="feature-meta"></div>
   </div>
 
   <!-- Main Layout -->
   <div class="main-layout">
-    <!-- Sidebar Navigation -->
-    <nav class="sidebar" id="sidebar">
-      <div class="sidebar-section-title">PDF Tools</div>
-      <button class="nav-btn active" data-feature="esign">
-        <span class="nav-icon">✍️</span>
-        <span class="nav-label">eSign</span>
-      </button>
-      <button class="nav-btn" data-feature="compress">
-        <span class="nav-icon">📦</span>
-        <span class="nav-label">Compress</span>
-      </button>
-      <button class="nav-btn" data-feature="convert">
-        <span class="nav-icon">🔄</span>
-        <span class="nav-label">Convert</span>
-      </button>
-      <button class="nav-btn" data-feature="split">
-        <span class="nav-icon">✂️</span>
-        <span class="nav-label">Split</span>
-      </button>
-      <button class="nav-btn" data-feature="merge">
-        <span class="nav-icon">📑</span>
-        <span class="nav-label">Merge</span>
-      </button>
-    </nav>
+    <!-- Page Navigation Sidebar with thumbnails -->
+    <aside class="page-nav-sidebar" id="pageNavSidebar">
+      <div class="page-nav-section-title">Page Navigation</div>
+      <div class="page-nav-file" id="pageNavFileName">📄 No file open</div>
+      <div class="page-nav-page-info" id="pageNavInfo">Page — / —</div>
+      <div class="page-nav-thumbnails" id="pageNavThumbnails">
+        <!-- Thumbnails rendered here dynamically -->
+      </div>
+    </aside>
 
     <!-- Content Area -->
     <main class="content" id="content">

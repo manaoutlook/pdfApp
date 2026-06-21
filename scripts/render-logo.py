@@ -28,9 +28,16 @@ SVG_PATH = os.path.join(ASSETS_DIR, 'logo2-pdf-shield-red.svg')
 SVG_VIEWBOX_SIZE = 200  # SVG is 200x200
 BASE_SIZE = 1024        # Internal render size for quality
 
+# macOS app icons must sit inside the canvas with a transparent margin so the
+# Dock renders them at the same effective size as other apps. Apple's icon grid
+# places the artwork at ~824px inside a 1024px canvas (≈80%), leaving ~10%
+# transparent padding on every side. A full-bleed icon looks oversized in the
+# Dock — which is exactly what we're fixing here.
+MACOS_CONTENT_RATIO = 0.80
+
 
 def render_svg_to_png(scale):
-    """Render the SVG at a given scale factor, return PNG bytes."""
+    """Render the SVG at a given scale factor, return PNG bytes (full-bleed)."""
     output_width = round(SVG_VIEWBOX_SIZE * scale)
     png_data = cairosvg.svg2png(
         url=SVG_PATH,
@@ -38,6 +45,30 @@ def render_svg_to_png(scale):
         output_height=output_width,
     )
     return png_data
+
+
+def render_padded_png(canvas_size, content_ratio=MACOS_CONTENT_RATIO):
+    """Render the SVG centered on a transparent square canvas with margins.
+
+    The artwork occupies `content_ratio` of the canvas; the remainder is
+    transparent padding. This is required for macOS Dock icons to match the
+    size of native apps.
+    """
+    content = round(canvas_size * content_ratio)
+    art_bytes = cairosvg.svg2png(
+        url=SVG_PATH,
+        output_width=content,
+        output_height=content,
+    )
+    art = Image.open(io.BytesIO(art_bytes)).convert('RGBA')
+
+    canvas = Image.new('RGBA', (canvas_size, canvas_size), (0, 0, 0, 0))
+    offset = (canvas_size - content) // 2
+    canvas.paste(art, (offset, offset), art)
+
+    buf = io.BytesIO()
+    canvas.save(buf, format='PNG')
+    return buf.getvalue()
 
 
 def create_ico(png_512_bytes, output_path):
@@ -191,29 +222,33 @@ if __name__ == '__main__':
     # ── Render at base resolution (1024×1024) ──
     scale_1024 = BASE_SIZE / SVG_VIEWBOX_SIZE  # 5.12
     print(f'  Rendering SVG at {BASE_SIZE}×{BASE_SIZE} (scale={scale_1024:.2f})...')
-    png_1024_bytes = render_svg_to_png(scale_1024)
+    png_1024_bleed = render_svg_to_png(scale_1024)  # full-bleed (Windows ICO)
 
-    # ── Produce 512×512 PNG ──
+    # Padded version with the macOS icon-grid margin (Dock / Linux / ICNS).
+    print(f'  Rendering padded {BASE_SIZE}×{BASE_SIZE} (content={MACOS_CONTENT_RATIO:.0%})...')
+    png_1024_padded = render_padded_png(BASE_SIZE)
+
+    # ── Produce 512×512 PNG (padded — used for the macOS Dock icon) ──
     png_512_path = os.path.join(ASSETS_DIR, 'logo.png')
     print(f'Exporting PNG 512×512 → {png_512_path}')
-    img_1024 = Image.open(io.BytesIO(png_1024_bytes))
-    img_512 = img_1024.resize((512, 512), Image.LANCZOS)
+    img_1024_padded = Image.open(io.BytesIO(png_1024_padded))
+    img_512 = img_1024_padded.resize((512, 512), Image.LANCZOS)
     img_512.save(png_512_path, 'PNG')
-    print('  ✓ PNG saved')
+    print('  ✓ PNG saved (with macOS margin)')
 
-    # ── ICO ──
+    # ── ICO (full-bleed — Windows expects edge-to-edge icons) ──
     if gen_ico:
         ico_path = os.path.join(ASSETS_DIR, 'logo.ico')
         print(f'Generating ICO → {ico_path}')
-        create_ico(png_1024_bytes, ico_path)
+        create_ico(png_1024_bleed, ico_path)
     else:
         print('  (skip ICO; use --ico or --all)')
 
-    # ── ICNS ──
+    # ── ICNS (padded — macOS app bundle icon) ──
     if gen_icns:
         icns_path = os.path.join(ASSETS_DIR, 'logo.icns')
         print(f'Generating ICNS → {icns_path}')
-        create_icns(png_1024_bytes, icns_path)
+        create_icns(png_1024_padded, icns_path)
     else:
         print('  (skip ICNS; use --icns or --all)')
 

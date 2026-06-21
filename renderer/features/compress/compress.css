@@ -2,7 +2,7 @@
    SmartPDF - Compress Feature Styles
    ============================================================ */
 
-/* PDF viewer inline toolbar (reuses .pdf-toolbar-inline from esign.css) */
+/* PDF viewer inline toolbar */
 .pdf-toolbar-inline {
   display: flex;
   align-items: center;
@@ -50,18 +50,18 @@
 .compress-profile-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .compress-profile-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px;
+  padding: 10px 12px;
   border: 2px solid #dadce0;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.18s ease;
   background: #fff;
 }
 
@@ -76,17 +76,21 @@
 }
 
 .compress-profile-icon {
-  font-size: 24px;
+  font-size: 22px;
   flex-shrink: 0;
-  width: 36px;
+  width: 30px;
   text-align: center;
 }
 
 .compress-profile-info {
   flex: 1;
+  min-width: 0;
 }
 
 .compress-profile-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 600;
   font-size: 13px;
   color: #333;
@@ -96,6 +100,149 @@
 .compress-profile-desc {
   font-size: 11px;
   color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
+   DPI Badges (inline labels on profile name row)
+   ============================================================ */
+.compress-profile-dpi-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  background: #e3f0fd;
+  color: #1a73e8;
+  border: 1px solid #a8c7fa;
+  flex-shrink: 0;
+}
+
+/* Maximum — orange tint */
+.compress-profile-dpi-badge.dpi-badge-max {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffcc80;
+}
+
+/* Lossless — green tint */
+.compress-profile-dpi-badge.dpi-badge-lossless {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+  font-size: 9px;
+}
+
+/* Custom — purple tint */
+.compress-profile-dpi-badge.dpi-badge-custom {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border-color: #ce93d8;
+}
+
+/* ============================================================
+   Custom DPI Slider Panel
+   ============================================================ */
+.compress-dpi-panel {
+  margin-top: 8px;
+  padding: 14px;
+  background: #faf5ff;
+  border: 1px solid #e0c8f8;
+  border-radius: 8px;
+  animation: compress-fadein 0.2s ease;
+}
+
+.compress-dpi-panel.hidden {
+  display: none;
+}
+
+@keyframes compress-fadein {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.compress-dpi-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.compress-dpi-panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+}
+
+.compress-dpi-value-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #7b1fa2;
+  min-width: 60px;
+  text-align: right;
+}
+
+/* Range slider */
+.compress-dpi-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ce93d8, #7b1fa2);
+  outline: none;
+  cursor: pointer;
+}
+
+.compress-dpi-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7b1fa2;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(123,31,162,0.4);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.compress-dpi-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.compress-dpi-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7b1fa2;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(123,31,162,0.4);
+  cursor: pointer;
+}
+
+/* Scale labels below slider */
+.compress-dpi-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 10px;
+  color: #999;
+}
+
+/* Contextual hint text */
+.compress-dpi-hint {
+  margin-top: 8px;
+  padding: 5px 8px;
+  background: #f3e5f5;
+  border-left: 3px solid #7b1fa2;
+  border-radius: 0 4px 4px 0;
+  font-size: 11px;
+  color: #6a1b9a;
+  line-height: 1.4;
 }
 
 /* ============================================================
@@ -130,7 +277,13 @@
 
 .compress-stat-value.savings {
   color: #34a853;
-  font-size: 14px;
+  font-size: 12px;
+}
+
+/* DPI used stat */
+.compress-stat-dpi {
+  color: #7b1fa2;
+  font-size: 12px;
 }
 
 /* Size comparison bar */
@@ -156,11 +309,8 @@
    ============================================================ */
 .compress-progress-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,7 +326,7 @@
   border-radius: 12px;
   padding: 32px 40px;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   min-width: 300px;
 }
 
@@ -237,7 +387,7 @@
 }
 
 /* ============================================================
-   Compress Button (full-width variant)
+   Compress Button
    ============================================================ */
 #compress-compressBtn {
   transition: all 0.2s;
@@ -250,7 +400,7 @@
 #compress-compressBtn:not(:disabled):hover {
   background: #1557b0;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+  box-shadow: 0 2px 8px rgba(26,115,232,0.3);
 }
 
 #compress-compressBtn:not(:disabled):active {

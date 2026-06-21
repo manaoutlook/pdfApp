@@ -21,10 +21,6 @@
         <button id="compress-openPdfBtn" class="btn-primary">📄 Open PDF</button>
         <span id="compress-fileName" class="file-name"></span>
         <div class="spacer"></div>
-        <button id="compress-prevPageBtn" class="btn-secondary">◀ Prev</button>
-        <span id="compress-pageInfo">Page 0 / 0</span>
-        <button id="compress-nextPageBtn" class="btn-secondary">Next ▶</button>
-        <div style="width:12px"></div>
         <button id="compress-savePdfBtn" class="btn-success" disabled>💾 Save Compressed PDF</button>
       </div>
       <div style="position:relative;display:inline-block;margin-top:12px">
@@ -51,27 +47,78 @@
     <div class="section">
       <div class="section-title">🎯 Compression Profile</div>
       <div class="compress-profile-list" id="compress-profileList">
+
+        <!-- Balanced -->
         <div class="compress-profile-card selected" data-profile="balanced">
           <div class="compress-profile-icon">⚖️</div>
           <div class="compress-profile-info">
-            <div class="compress-profile-name">Balanced</div>
-            <div class="compress-profile-desc">Good quality · ~60% smaller</div>
+            <div class="compress-profile-name">
+              Balanced
+              <span class="compress-profile-dpi-badge">150 DPI</span>
+            </div>
+            <div class="compress-profile-desc">Good quality · noticeably smaller</div>
           </div>
         </div>
+
+        <!-- Maximum -->
         <div class="compress-profile-card" data-profile="maximum">
           <div class="compress-profile-icon">📦</div>
           <div class="compress-profile-info">
-            <div class="compress-profile-name">Maximum</div>
+            <div class="compress-profile-name">
+              Maximum
+              <span class="compress-profile-dpi-badge dpi-badge-max">96 DPI</span>
+            </div>
             <div class="compress-profile-desc">Smallest file · visible quality loss</div>
           </div>
         </div>
+
+        <!-- Lossless -->
         <div class="compress-profile-card" data-profile="lossless">
           <div class="compress-profile-icon">🔒</div>
           <div class="compress-profile-info">
-            <div class="compress-profile-name">Lossless</div>
+            <div class="compress-profile-name">
+              Lossless
+              <span class="compress-profile-dpi-badge dpi-badge-lossless">Original DPI</span>
+            </div>
             <div class="compress-profile-desc">Zero quality loss · strips metadata</div>
           </div>
         </div>
+
+        <!-- Custom DPI -->
+        <div class="compress-profile-card" data-profile="custom">
+          <div class="compress-profile-icon">🎛️</div>
+          <div class="compress-profile-info">
+            <div class="compress-profile-name">
+              Custom DPI
+              <span class="compress-profile-dpi-badge dpi-badge-custom" id="compress-customDpiBadge">150 DPI</span>
+            </div>
+            <div class="compress-profile-desc">Set your own resolution</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Custom DPI Slider Panel (hidden unless Custom is selected) -->
+      <div class="compress-dpi-panel hidden" id="compress-dpiPanel">
+        <div class="compress-dpi-panel-header">
+          <span class="compress-dpi-panel-title">🎚️ Resolution</span>
+          <span class="compress-dpi-value-label" id="compress-dpiValueLabel">150 DPI</span>
+        </div>
+        <input
+          type="range"
+          id="compress-dpiSlider"
+          class="compress-dpi-slider"
+          min="72"
+          max="300"
+          step="1"
+          value="150"
+        />
+        <div class="compress-dpi-scale-labels">
+          <span>72 — Draft</span>
+          <span>150 — Balanced</span>
+          <span>300 — Print</span>
+        </div>
+        <div class="compress-dpi-hint" id="compress-dpiHint">Similar to Balanced quality</div>
       </div>
     </div>
 
@@ -90,6 +137,10 @@
         <div class="compress-stat-row">
           <span class="compress-stat-label">Savings</span>
           <span class="compress-stat-value savings" id="compress-savingsPercent">—</span>
+        </div>
+        <div class="compress-stat-row" id="compress-dpiStatRow" style="display:none">
+          <span class="compress-stat-label">DPI Used</span>
+          <span class="compress-stat-value compress-stat-dpi" id="compress-dpiUsed">—</span>
         </div>
       </div>
       <div class="compress-size-bar">
@@ -113,3 +164,7 @@
       1. Open / Drop a PDF file<br>
       2. Select a compression profile<br>
       3. Click "Compress" to process<br>
+      4. Save your compressed PDF
+    </div>
+  </div>
+</div>

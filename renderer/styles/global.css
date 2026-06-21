@@ -42,6 +42,46 @@ body {
   flex-shrink: 0;
 }
 
+/* ============================================================
+   Toolbar Navigation (PDF Tools next to SmartPDF logo)
+   ============================================================ */
+.toolbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 16px;
+}
+
+.toolbar-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: #555;
+  border-radius: 6px;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.toolbar-nav-btn:hover {
+  background: #f0f6ff;
+  color: #1a73e8;
+}
+
+.toolbar-nav-btn.active {
+  background: #e8f0fe;
+  color: #1a73e8;
+  font-weight: 600;
+}
+
+.toolbar-nav-btn .nav-icon { font-size: 14px; }
+.toolbar-nav-btn .nav-label { font-size: 12px; }
+
 .feature-meta {
   font-size: 13px;
   color: #666;
@@ -59,56 +99,105 @@ body {
 }
 
 /* ============================================================
-   Sidebar
+   Page Navigation Sidebar
    ============================================================ */
-.sidebar {
+.page-nav-sidebar {
   width: 200px;
   background: #fff;
   border-right: 1px solid #dadce0;
-  padding: 12px 0;
+  padding: 16px;
   overflow-y: auto;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
-.sidebar-section-title {
+.page-nav-section-title {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   color: #999;
-  padding: 8px 16px 4px;
   letter-spacing: 0.5px;
-}
-
-.nav-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  text-align: center;
   width: 100%;
-  padding: 10px 16px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 13px;
+}
+
+.page-nav-file {
+  font-size: 12px;
   color: #555;
-  text-align: left;
+  text-align: center;
+  word-break: break-all;
+  line-height: 1.4;
+  max-width: 100%;
+}
+
+.page-nav-page-info {
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.page-nav-thumbnails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.page-nav-thumbnails::-webkit-scrollbar {
+  width: 4px;
+}
+
+.page-nav-thumbnails::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
+}
+
+.page-nav-thumb-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
   transition: all 0.15s;
-  border-left: 3px solid transparent;
+  background: #f8f9fa;
+  flex-shrink: 0;
 }
 
-.nav-btn:hover {
+.page-nav-thumb-item:hover {
   background: #f0f6ff;
-  color: #1a73e8;
+  border-color: #a8c7fa;
 }
 
-.nav-btn.active {
+.page-nav-thumb-item.active {
   background: #e8f0fe;
-  color: #1a73e8;
-  border-left-color: #1a73e8;
-  font-weight: 600;
+  border-color: #1a73e8;
 }
 
-.nav-icon { font-size: 16px; }
-.nav-label { white-space: nowrap; }
+.page-nav-thumb-canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  pointer-events: none;
+}
+
+.page-nav-thumb-label {
+  font-size: 10px;
+  color: #666;
+  font-weight: 500;
+}
 
 /* ============================================================
    Content Area

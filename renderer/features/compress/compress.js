@@ -1,10 +1,22 @@
 // ============================================================
 // SmartPDF - Compress Feature
 // Uses the shared PdfTabs component for multi-file management.
-// Compression engine: pdf-lib + pdfjs-dist rasterization.
+//
+// Compression engine: pdfjs-dist (rasterization) + pdf-lib (rebuild).
+//
+// KEY DESIGN PRINCIPLE:
+//   DPI drives quality — not an arbitrary file-size ratio.
+//   renderScale = targetDPI / 72  (72 is PDF's base resolution unit)
+//
+// Profiles:
+//   balanced  — 150 DPI, JPEG 0.78  → good quality, noticeably smaller
+//   maximum   — 96 DPI,  JPEG 0.50  → smallest file, visible quality loss
+//   lossless  — NO rasterization     → strips metadata/XMP only, exact pixels
+//   custom    — user-chosen DPI,     → full control via slider
+//               JPEG 0.75 (fixed)
 // ============================================================
 
-(function() {
+(function () {
   'use strict';
 
   const { ipcRenderer } = require('electron');
@@ -13,35 +25,52 @@
   const pdfjsLib = require('pdfjs-dist');
 
   // ============================================================
-  // State
+  // Profile Definitions
   // ============================================================
-  let pdfTabs = null;
-  let scale = 1.5;
-  let compressionProfile = 'balanced'; // 'balanced' | 'maximum' | 'lossless'
-  let compressedBase64 = null;         // Result of last compression
-  let isCompressing = false;
 
-  // Profile settings
+  // PDF base resolution is 72 "user units" per inch.
+  // renderScale = desiredDPI / 72
+  // A higher DPI → larger canvas → sharper image → bigger file.
   const PROFILES = {
     balanced: {
       label: 'Balanced',
-      renderScale: 0.55,
-      targetRatio: 0.50,    // 50% reduction → result = 50% of original
-      desc: 'Good quality · 50% smaller',
+      dpi: 150,
+      get renderScale() { return this.dpi / 72; },
+      jpegQuality: 0.78,
+      desc: '150 DPI · Good quality, noticeably smaller',
     },
     maximum: {
       label: 'Maximum',
-      renderScale: 0.35,
-      targetRatio: 0.25,    // 75% reduction → result = 25% of original
-      desc: 'Smallest file · 75% smaller',
+      dpi: 96,
+      get renderScale() { return this.dpi / 72; },
+      jpegQuality: 0.50,
+      desc: '96 DPI · Smallest file, visible quality loss',
     },
     lossless: {
       label: 'Lossless',
+      dpi: null,          // No rasterization
       renderScale: null,
-      targetRatio: 0.85,    // 15% reduction → result = 85% of original
-      desc: 'Zero quality loss · 15% smaller',
+      jpegQuality: null,
+      desc: 'Original DPI · Strips metadata, no pixel changes',
+    },
+    custom: {
+      label: 'Custom DPI',
+      dpi: 150,           // Updated live by the slider
+      get renderScale() { return this.dpi / 72; },
+      jpegQuality: 0.75,
+      desc: 'User-defined DPI',
     },
   };
+
+  // ============================================================
+  // State
+  // ============================================================
+  let pdfTabs = null;
+  let scale = 1.5;                        // Preview render scale
+  let compressionProfile = 'balanced';
+  let compressedBase64 = null;
+  let isCompressing = false;
+  let customDpi = 150;                    // Tracks current custom DPI value
 
   // ============================================================
   // DOM References
@@ -50,27 +79,33 @@
 
   function cacheDom() {
     dom = {
-      pdfDropArea: document.getElementById('compress-pdfDropArea'),
-      pdfPageContainer: document.getElementById('compress-pdfPageContainer'),
-      pdfCanvas: document.getElementById('compress-pdf-canvas'),
-      pageInfo: document.getElementById('compress-pageInfo'),
-      pageInfoBottom: document.getElementById('compress-pageInfoBottom'),
-      fileName: document.getElementById('compress-fileName'),
-      openPdfBtn: document.getElementById('compress-openPdfBtn'),
-      prevPageBtn: document.getElementById('compress-prevPageBtn'),
-      nextPageBtn: document.getElementById('compress-nextPageBtn'),
-      savePdfBtn: document.getElementById('compress-savePdfBtn'),
-      compressBtn: document.getElementById('compress-compressBtn'),
-      profileList: document.getElementById('compress-profileList'),
-      originalSize: document.getElementById('compress-originalSize'),
-      compressedSize: document.getElementById('compress-compressedSize'),
-      savingsPercent: document.getElementById('compress-savingsPercent'),
-      sizeBarInner: document.getElementById('compress-sizeBarInner'),
-      progressOverlay: document.getElementById('compress-progressOverlay'),
-      progressText: document.getElementById('compress-progressText'),
-      progressFill: document.getElementById('compress-progressFill'),
-      tabScroll: document.getElementById('compress-tabScroll'),
-      tabBar: document.getElementById('compress-tabBar'),
+      pdfDropArea:       document.getElementById('compress-pdfDropArea'),
+      pdfPageContainer:  document.getElementById('compress-pdfPageContainer'),
+      pdfCanvas:         document.getElementById('compress-pdf-canvas'),
+      pageInfoBottom:    document.getElementById('compress-pageInfoBottom'),
+      fileName:          document.getElementById('compress-fileName'),
+      openPdfBtn:        document.getElementById('compress-openPdfBtn'),
+      savePdfBtn:        document.getElementById('compress-savePdfBtn'),
+      compressBtn:       document.getElementById('compress-compressBtn'),
+      profileList:       document.getElementById('compress-profileList'),
+      originalSize:      document.getElementById('compress-originalSize'),
+      compressedSize:    document.getElementById('compress-compressedSize'),
+      savingsPercent:    document.getElementById('compress-savingsPercent'),
+      sizeBarInner:      document.getElementById('compress-sizeBarInner'),
+      progressOverlay:   document.getElementById('compress-progressOverlay'),
+      progressText:      document.getElementById('compress-progressText'),
+      progressFill:      document.getElementById('compress-progressFill'),
+      tabScroll:         document.getElementById('compress-tabScroll'),
+      tabBar:            document.getElementById('compress-tabBar'),
+      // DPI slider controls
+      dpiPanel:          document.getElementById('compress-dpiPanel'),
+      dpiSlider:         document.getElementById('compress-dpiSlider'),
+      dpiValueLabel:     document.getElementById('compress-dpiValueLabel'),
+      dpiHint:           document.getElementById('compress-dpiHint'),
+      customDpiBadge:    document.getElementById('compress-customDpiBadge'),
+      // DPI stat row
+      dpiStatRow:        document.getElementById('compress-dpiStatRow'),
+      dpiUsed:           document.getElementById('compress-dpiUsed'),
     };
   }
 
@@ -87,10 +122,10 @@
     const PdfTabs = window.SmartPDF.PdfTabs;
 
     pdfTabs = new PdfTabs({
-      tabBarEl: dom.tabBar,
-      tabScrollEl: dom.tabScroll,
-      onTabSwitch: onTabSwitched,
-      onTabClose: onTabClosed,
+      tabBarEl:       dom.tabBar,
+      tabScrollEl:    dom.tabScroll,
+      onTabSwitch:    onTabSwitched,
+      onTabClose:     onTabClosed,
       onDocumentLoad: onDocumentLoaded,
     });
   }
@@ -107,6 +142,10 @@
     renderPreview(tab);
     updateStats(tab);
     updateCompressButton(tab);
+    // Sync the global page navigation sidebar
+    if (typeof window.SmartPDF.updatePageNavSidebar === 'function') {
+      window.SmartPDF.updatePageNavSidebar();
+    }
   }
 
   function onTabClosed(tabId) {
@@ -115,17 +154,24 @@
       dom.pdfDropArea.classList.remove('hidden');
       resetStats();
     }
+    // Sync the global page navigation sidebar
+    if (typeof window.SmartPDF.updatePageNavSidebar === 'function') {
+      window.SmartPDF.updatePageNavSidebar();
+    }
   }
 
   function onDocumentLoaded(tab) {
     updateTabInfo(tab);
     updateStats(tab);
     updateCompressButton(tab);
+    // Sync the global page navigation sidebar
+    if (typeof window.SmartPDF.updatePageNavSidebar === 'function') {
+      window.SmartPDF.updatePageNavSidebar();
+    }
   }
 
   function updateTabInfo(tab) {
     const info = `Page ${tab.currentPage} / ${tab.totalPages}`;
-    dom.pageInfo.textContent = info;
     dom.pageInfoBottom.textContent = info;
     dom.fileName.textContent = `📄 ${tab.fileName}`;
     dom.compressBtn.disabled = false;
@@ -163,8 +209,18 @@
   // ============================================================
   // Page Rendering (Preview)
   // ============================================================
+  let previewRenderTask = null;
+
   async function renderPreview(tab) {
     if (!tab || !tab.pdfDoc) return;
+
+    // Cancel any in-flight render on the shared preview canvas. Without this,
+    // a resize / tab-switch / page-nav firing mid-render makes pdf.js throw
+    // "Cannot use the same canvas during multiple render() operations".
+    if (previewRenderTask) {
+      try { previewRenderTask.cancel(); } catch (e) { /* ignore */ }
+      previewRenderTask = null;
+    }
 
     const page = await tab.pdfDoc.getPage(tab.currentPage);
     const viewport = page.getViewport({ scale });
@@ -174,17 +230,21 @@
     canvas.width = viewport.width;
     canvas.height = viewport.height;
 
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport,
-    };
-
-    await page.render(renderContext).promise;
-    updateTabInfo(tab);
+    try {
+      previewRenderTask = page.render({ canvasContext: context, viewport });
+      await previewRenderTask.promise;
+      previewRenderTask = null;
+      updateTabInfo(tab);
+    } catch (err) {
+      // RenderingCancelledException is expected when we cancel above — ignore it.
+      if (err && err.name !== 'RenderingCancelledException') {
+        console.error('[compress] Preview render failed:', err);
+      }
+    }
   }
 
   // ============================================================
-  // Page Navigation
+  // Page Navigation (kept for internal use, but sidebar uses pdfTabs directly)
   // ============================================================
   function prevPage() {
     const tab = getActiveTab();
@@ -201,11 +261,56 @@
   }
 
   // ============================================================
+  // Page Thumbnails (for sidebar)
+  // ============================================================
+  function renderThumbnails(container) {
+    const tab = getActiveTab();
+    if (!tab || !tab.pdfDoc) return;
+
+    const totalPages = tab.totalPages;
+    const activePage = tab.currentPage;
+
+    for (let i = 1; i <= totalPages; i++) {
+      const item = document.createElement('div');
+      item.className = 'page-nav-thumb-item' + (i === activePage ? ' active' : '');
+      item.dataset.page = i;
+
+      const canvas = document.createElement('canvas');
+      canvas.className = 'page-nav-thumb-canvas';
+      canvas.width = 160;
+      canvas.height = 200;
+      item.appendChild(canvas);
+
+      const label = document.createElement('div');
+      label.className = 'page-nav-thumb-label';
+      label.textContent = `Page ${i}`;
+      item.appendChild(label);
+
+      container.appendChild(item);
+
+      // Render thumbnail asynchronously
+      renderThumbnailPage(tab, i, canvas);
+    }
+  }
+
+  async function renderThumbnailPage(tab, pageNum, canvas) {
+    try {
+      const page = await tab.pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 0.15 });
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+    } catch (err) {
+      // Silently ignore thumbnail render errors
+    }
+  }
+
+  // ============================================================
   // File Size Utilities
   // ============================================================
   function base64ToBytes(base64) {
-    // Accurate: base64 encodes 3 bytes into 4 chars
-    const padding = (base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0);
+    const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
     return (base64.length * 3) / 4 - padding;
   }
 
@@ -216,71 +321,63 @@
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
   }
 
-  function dataUrlToBytes(dataUrl) {
-    const base64 = dataUrl.split(',')[1];
-    return base64ToBytes(base64);
+  // ============================================================
+  // DPI Hint Text
+  // ============================================================
+  function getDpiHint(dpi) {
+    if (dpi <= 72)  return 'Draft quality — screen only';
+    if (dpi <= 96)  return 'Similar to Maximum compression';
+    if (dpi <= 130) return 'Moderate quality, good for email';
+    if (dpi <= 160) return 'Similar to Balanced compression';
+    if (dpi <= 200) return 'High quality — everyday sharing';
+    if (dpi <= 250) return 'Very high quality — near original';
+    return 'Print quality — minimal size reduction';
   }
 
   // ============================================================
-  // Size Estimation & Stats
+  // Stats Display
   // ============================================================
-  function calculateEstimates(tab) {
-    if (!tab || !tab.base64) return null;
-
-    const originalBytes = base64ToBytes(tab.base64);
-    const pageCount = tab.totalPages || 1;
-
-    let estimatedBytes;
-    if (compressionProfile === 'lossless') {
-      // Lossless: 15% reduction → target 85% of original
-      estimatedBytes = originalBytes * 0.85;
-    } else if (compressionProfile === 'maximum') {
-      // Maximum: 75% reduction → target 25% of original
-      estimatedBytes = originalBytes * 0.25;
-    } else {
-      // Balanced: 50% reduction → target 50% of original
-      estimatedBytes = originalBytes * 0.50;
-    }
-
-    // Clamp to reasonable minimum
-    const minBytes = 1024; // 1 KB minimum
-    estimatedBytes = Math.max(minBytes, estimatedBytes);
-
-    const savingsPercent = Math.round((1 - estimatedBytes / originalBytes) * 100);
-
-    return {
-      originalBytes,
-      estimatedBytes,
-      savingsPercent,
-    };
-  }
-
   function updateStats(tab) {
     if (!tab || !tab.base64) return;
 
-    const estimates = calculateEstimates(tab);
-    if (!estimates) return;
-
-    dom.originalSize.textContent = formatBytes(estimates.originalBytes);
+    const originalBytes = base64ToBytes(tab.base64);
+    dom.originalSize.textContent = formatBytes(originalBytes);
 
     if (compressedBase64) {
-      // Show actual compressed stats
+      // Show actual results after compression
       const actualBytes = base64ToBytes(compressedBase64);
+      const savings = Math.round((1 - actualBytes / originalBytes) * 100);
+
       dom.compressedSize.textContent = formatBytes(actualBytes);
-      const savings = Math.round((1 - actualBytes / estimates.originalBytes) * 100);
-      dom.savingsPercent.textContent = savings + '% saved';
-      dom.savingsPercent.style.color = savings > 5 ? '#34a853' : '#ea4335';
+      dom.savingsPercent.textContent = savings > 0
+        ? `${savings}% saved`
+        : savings === 0
+          ? 'No change'
+          : `${Math.abs(savings)}% larger`;
+      dom.savingsPercent.style.color = savings > 5
+        ? '#34a853'
+        : savings < 0
+          ? '#ea4335'
+          : '#f9a825';
 
-      // Update size bar
-      const ratio = Math.max(0, Math.min(100, ((estimates.originalBytes - actualBytes) / estimates.originalBytes) * 100));
-      dom.sizeBarInner.style.width = ratio + '%';
+      const barRatio = Math.max(0, Math.min(100, savings));
+      dom.sizeBarInner.style.width = barRatio + '%';
+
+      // Show DPI stat row only for rasterized profiles
+      const profile = PROFILES[compressionProfile];
+      if (profile.dpi !== null) {
+        dom.dpiStatRow.style.display = '';
+        dom.dpiUsed.textContent = profile.dpi + ' DPI';
+      } else {
+        dom.dpiStatRow.style.display = 'none';
+      }
     } else {
-      // Show estimated stats
-      dom.compressedSize.textContent = '~' + formatBytes(estimates.estimatedBytes);
-      dom.savingsPercent.textContent = '~' + estimates.savingsPercent + '% estimated';
-      dom.savingsPercent.style.color = '#f9a825';
-
-      dom.sizeBarInner.style.width = estimates.savingsPercent + '%';
+      // No compression done yet — show placeholder
+      dom.compressedSize.textContent = '—';
+      dom.savingsPercent.textContent = 'Run compress to see results';
+      dom.savingsPercent.style.color = '#888';
+      dom.sizeBarInner.style.width = '0%';
+      dom.dpiStatRow.style.display = 'none';
     }
   }
 
@@ -290,235 +387,10 @@
     dom.savingsPercent.textContent = '—';
     dom.savingsPercent.style.color = '';
     dom.sizeBarInner.style.width = '0%';
+    dom.dpiStatRow.style.display = 'none';
     dom.compressBtn.disabled = true;
     dom.savePdfBtn.disabled = true;
     compressedBase64 = null;
-  }
-
-  // ============================================================
-  // Compression Engine
-  // ============================================================
-
-  /**
-   * Lossless compression: strips metadata and uses object streams.
-   * Preserves all vector quality — no rasterization.
-   */
-  async function compressLossless(base64) {
-    const pdfBytesLoad = Buffer.from(base64, 'base64');
-    const pdfDoc = await PDFDocument.load(pdfBytesLoad, {
-      ignoreEncryption: true,
-    });
-
-    // Strip metadata
-    pdfDoc.setTitle('');
-    pdfDoc.setAuthor('');
-    pdfDoc.setSubject('');
-    pdfDoc.setKeywords([]);
-    pdfDoc.setProducer('SmartPDF');
-    pdfDoc.setCreator('SmartPDF');
-
-    // Save with object stream compression
-    const pdfBytes = await pdfDoc.save({ useObjectStreams: true });
-    return Buffer.from(pdfBytes).toString('base64');
-  }
-
-  /**
-   * Render ALL pages once and return an array of canvas objects.
-   * Each entry: { width, height, canvas } — the canvas holds the rendered page.
-   * This is the expensive step (pdfjs rendering) — done only once.
-   */
-  async function renderAllCanvases(base64, renderScale) {
-    const pdfBytesLoad = Buffer.from(base64, 'base64');
-    const pdfJsDoc = await pdfjsLib.getDocument({ data: pdfBytesLoad }).promise;
-    const pageCount = pdfJsDoc.numPages;
-    const canvases = [];
-
-    for (let i = 1; i <= pageCount; i++) {
-      const page = await pdfJsDoc.getPage(i);
-      const viewport = page.getViewport({ scale: renderScale });
-
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
-      const ctx = canvas.getContext('2d');
-      await page.render({ canvasContext: ctx, viewport }).promise;
-
-      canvases.push({ width: viewport.width, height: viewport.height, canvas });
-      updateProgress(i, pageCount);
-    }
-
-    pdfJsDoc.destroy();
-    console.log(`[compress] Rendered ${pageCount} canvases`);
-    return canvases;
-  }
-
-  /**
-   * Sum the JPEG byte count of ALL canvases at a given quality.
-   * canvas.toDataURL() re-encodes without re-rendering — very fast.
-   */
-  function sumJpegBytes(canvases, jpegQuality) {
-    let total = 0;
-    for (const item of canvases) {
-      const dataUrl = item.canvas.toDataURL('image/jpeg', jpegQuality);
-      const commaIndex = dataUrl.indexOf(',');
-      const base64 = dataUrl.substring(commaIndex + 1);
-      total += base64ToBytes(base64);
-    }
-    return total;
-  }
-
-  /**
-   * Build a single-page PDF from the first canvas to measure actual PDF overhead.
-   * Returns the difference: (full 1-page PDF bytes) − (JPEG bytes embedded).
-   */
-  async function measureOverhead(firstCanvas, jpegQuality) {
-    const dataUrl = firstCanvas.canvas.toDataURL('image/jpeg', jpegQuality);
-    const commaIndex = dataUrl.indexOf(',');
-    const jpegBase64 = dataUrl.substring(commaIndex + 1);
-    const jpegBytes = Buffer.from(jpegBase64, 'base64');
-
-    const newPdf = await PDFDocument.create();
-    let embeddedImage;
-    try {
-      embeddedImage = await newPdf.embedJpg(jpegBytes);
-    } catch (embedErr) {
-      const pngDataUrl = firstCanvas.canvas.toDataURL('image/png');
-      const pngComma = pngDataUrl.indexOf(',');
-      const pngBase64 = pngDataUrl.substring(pngComma + 1);
-      embeddedImage = await newPdf.embedPng(Buffer.from(pngBase64, 'base64'));
-    }
-
-    const newPage = newPdf.addPage([firstCanvas.width, firstCanvas.height]);
-    newPage.drawImage(embeddedImage, { x: 0, y: 0, width: firstCanvas.width, height: firstCanvas.height });
-
-    const pdfBytes = await newPdf.save({ useObjectStreams: true });
-    const overhead = pdfBytes.length - jpegBytes.length;
-    console.log(`[compress] Measured overhead: ${overhead} bytes (PDF ${pdfBytes.length} − JPEG ${jpegBytes.length})`);
-    return Math.max(0, overhead);
-  }
-
-  /**
-   * Binary search JPEG quality using ALL canvases.
-   * Each iteration sums JPEG bytes for every canvas → accurate total.
-   * @returns {number} jpegQuality (0.05 – 1.0)
-   */
-  function findTargetQuality(canvases, perPageOverhead, targetBytes) {
-    const pageCount = canvases.length;
-    const totalOverhead = perPageOverhead * pageCount;
-    const targetJpegTotal = Math.max(1, targetBytes - totalOverhead);
-
-    console.log(`[compress] Calibrating: target=${formatBytes(targetBytes)}, targetJpeg=${formatBytes(targetJpegTotal)}, pages=${pageCount}, overhead=${perPageOverhead}B/page`);
-
-    let lo = 0.05;
-    let hi = 1.00;
-    let bestQuality = 0.50;
-    const maxIterations = 15;
-
-    for (let iter = 0; iter < maxIterations; iter++) {
-      const mid = (lo + hi) / 2;
-      const jpegSum = sumJpegBytes(canvases, mid);
-
-      if (Math.abs(jpegSum - targetJpegTotal) / targetJpegTotal < 0.02) {
-        // Within 2% — close enough
-        bestQuality = mid;
-        break;
-      }
-
-      if (jpegSum > targetJpegTotal) {
-        hi = mid;
-      } else {
-        lo = mid;
-      }
-      bestQuality = mid;
-    }
-
-    console.log(`[compress] Calibrated quality: ${bestQuality.toFixed(4)}`);
-    return bestQuality;
-  }
-
-  /**
-   * Build the final PDF from pre-rendered canvases at the given JPEG quality.
-   * No pdfjs involved — just embed + pdf-lib save.
-   */
-  async function buildPdfFromCanvases(canvases, jpegQuality) {
-    const newPdf = await PDFDocument.create();
-
-    for (let i = 0; i < canvases.length; i++) {
-      const item = canvases[i];
-      const dataUrl = item.canvas.toDataURL('image/jpeg', jpegQuality);
-      const commaIndex = dataUrl.indexOf(',');
-      const jpegBase64 = dataUrl.substring(commaIndex + 1);
-      const jpegBytes = Buffer.from(jpegBase64, 'base64');
-
-      let embeddedImage;
-      try {
-        embeddedImage = await newPdf.embedJpg(jpegBytes);
-      } catch (embedErr) {
-        console.warn(`[compress] JPEG embed failed for page ${i + 1}, trying PNG`);
-        const pngDataUrl = item.canvas.toDataURL('image/png');
-        const pngComma = pngDataUrl.indexOf(',');
-        const pngBase64 = pngDataUrl.substring(pngComma + 1);
-        embeddedImage = await newPdf.embedPng(Buffer.from(pngBase64, 'base64'));
-      }
-
-      const newPage = newPdf.addPage([item.width, item.height]);
-      newPage.drawImage(embeddedImage, { x: 0, y: 0, width: item.width, height: item.height });
-    }
-
-    const pdfBytes = await newPdf.save({ useObjectStreams: true });
-    return Buffer.from(pdfBytes).toString('base64');
-  }
-
-  /**
-   * Rasterized compression: render all canvases once,
-   * calibrate JPEG quality from the full dataset,
-   * build the PDF once, and correct if needed.
-   */
-  async function compressRasterized(base64, renderScale, targetRatio) {
-    const originalBytes = base64ToBytes(base64);
-    const targetBytes = originalBytes * targetRatio;
-    const originalSizeStr = formatBytes(originalBytes);
-    const targetSizeStr = formatBytes(targetBytes);
-    console.log(`[compress] Target: ${originalSizeStr} → ${targetSizeStr} (${((1 - targetRatio) * 100).toFixed(0)}% reduction)`);
-
-    // Step 1: Render ALL canvases once (expensive)
-    showProgress('Rendering pages...', 5);
-    const canvases = await renderAllCanvases(base64, renderScale);
-    let jpegQuality = 0.50;
-
-    // Step 2: Measure actual PDF overhead from the first canvas
-    const perPageOverhead = await measureOverhead(canvases[0], 0.50);
-
-    // Step 3: Calibrate JPEG quality from ALL canvases
-    showProgress('Calibrating quality...', 30);
-    jpegQuality = findTargetQuality(canvases, perPageOverhead, targetBytes);
-
-    // Step 4: Build PDF
-    showProgress('Building compressed PDF...', 50);
-    let resultBase64 = await buildPdfFromCanvases(canvases, jpegQuality);
-    let resultBytes = base64ToBytes(resultBase64);
-    const actualRatio = resultBytes / originalBytes;
-    const error = Math.abs(actualRatio - targetRatio) / targetRatio;
-
-    console.log(`[compress] Pass 1: ${formatBytes(resultBytes)} (${(actualRatio * 100).toFixed(1)}% of original), error=${(error * 100).toFixed(1)}%`);
-
-    // Step 5: Correction pass if off by more than 5%
-    if (error > 0.05 && resultBytes > 0) {
-      const correctedQuality = Math.max(0.05, Math.min(1.00, jpegQuality * (targetBytes / resultBytes)));
-      console.log(`[compress] Correcting: Q=${jpegQuality.toFixed(4)} → Q=${correctedQuality.toFixed(4)}`);
-
-      showProgress('Correcting compression...', 75);
-      resultBase64 = await buildPdfFromCanvases(canvases, correctedQuality);
-      resultBytes = base64ToBytes(resultBase64);
-      jpegQuality = correctedQuality;
-
-      const correctedRatio = resultBytes / originalBytes;
-      const correctedError = Math.abs(correctedRatio - targetRatio) / targetRatio;
-      console.log(`[compress] Pass 2: ${formatBytes(resultBytes)} (${(correctedRatio * 100).toFixed(1)}% of original), error=${(correctedError * 100).toFixed(1)}%`);
-    }
-
-    console.log(`[compress] Final: Q=${jpegQuality.toFixed(4)}, ${formatBytes(resultBytes)}`);
-    return resultBase64;
   }
 
   // ============================================================
@@ -537,8 +409,129 @@
 
   function updateProgress(current, total) {
     const percent = Math.round((current / total) * 100);
-    dom.progressText.textContent = `Processing page ${current} of ${total}...`;
+    dom.progressText.textContent = `Rendering page ${current} of ${total}...`;
     dom.progressFill.style.width = percent + '%';
+  }
+
+  // ============================================================
+  // Compression Engine — Lossless
+  //
+  // Strips metadata and re-saves with object streams.
+  // NEVER rasterizes — every pixel is preserved exactly.
+  // ============================================================
+  async function compressLossless(base64) {
+    const pdfBytes = Buffer.from(base64, 'base64');
+    const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+
+    // Strip all metadata fields
+    pdfDoc.setTitle('');
+    pdfDoc.setAuthor('');
+    pdfDoc.setSubject('');
+    pdfDoc.setKeywords([]);
+    pdfDoc.setProducer('SmartPDF');
+    pdfDoc.setCreator('SmartPDF');
+
+    // Save with object stream compression (Flate/ZIP)
+    const optimized = await pdfDoc.save({ useObjectStreams: true });
+    return Buffer.from(optimized).toString('base64');
+  }
+
+  // ============================================================
+  // Compression Engine — Rasterized (Balanced / Maximum / Custom)
+  //
+  //  1. Render each page at renderScale (= dpi/72) using pdfjs
+  //  2. Encode each page as JPEG at jpegQuality
+  //  3. Embed all pages into a new pdf-lib document
+  //
+  // No binary search. No target ratio. DPI IS the quality control.
+  // ============================================================
+  async function compressRasterized(base64, dpi, jpegQuality) {
+    const renderScale = dpi / 72;
+
+    console.log(`[compress] Rasterizing at ${dpi} DPI (scale=${renderScale.toFixed(3)}), JPEG Q=${jpegQuality}`);
+
+    const pdfBytesLoad = Buffer.from(base64, 'base64');
+    const pdfJsDoc = await pdfjsLib.getDocument({ data: pdfBytesLoad }).promise;
+    const pageCount = pdfJsDoc.numPages;
+
+    // Chromium hard-limits a canvas to 16384px per side (and ~268M px area).
+    // If a page at the requested DPI would exceed that, toDataURL() silently
+    // returns an empty string, which later surfaces as a bogus embed error.
+    // We clamp the *bitmap* resolution per page but never touch page size.
+    const MAX_CANVAS_DIM = 16384;
+
+    // Step 1: Render all pages at target DPI
+    showProgress('Rendering pages...', 5);
+    const canvases = [];
+    for (let i = 1; i <= pageCount; i++) {
+      const page = await pdfJsDoc.getPage(i);
+
+      // The page's ORIGINAL size in PDF points (scale = 1). This is the
+      // physical size the rebuilt page must keep — DPI only controls how
+      // many pixels we render into it, NOT how big the page is.
+      const baseViewport = page.getViewport({ scale: 1 });
+
+      // Clamp render scale so neither canvas dimension exceeds the limit.
+      let pageScale = renderScale;
+      const maxDim = Math.max(baseViewport.width, baseViewport.height) * renderScale;
+      if (maxDim > MAX_CANVAS_DIM) {
+        pageScale = renderScale * (MAX_CANVAS_DIM / maxDim);
+        console.warn(`[compress] Page ${i} clamped: ${renderScale.toFixed(2)} → ${pageScale.toFixed(2)} to stay under ${MAX_CANVAS_DIM}px`);
+      }
+
+      const viewport = page.getViewport({ scale: pageScale });
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      // Store the ORIGINAL point dimensions for the rebuilt page.
+      canvases.push({ width: baseViewport.width, height: baseViewport.height, canvas });
+      updateProgress(i, pageCount);
+    }
+    pdfJsDoc.destroy();
+    console.log(`[compress] Rendered ${pageCount} pages at ${dpi} DPI`);
+
+    // Step 2: Encode pages as JPEG and assemble into a new PDF
+    showProgress('Building compressed PDF...', 70);
+    const newPdf = await PDFDocument.create();
+
+    for (let i = 0; i < canvases.length; i++) {
+      const item = canvases[i];
+      const dataUrl = item.canvas.toDataURL('image/jpeg', jpegQuality);
+      const jpegBase64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+
+      // An empty payload means the canvas could not be encoded (almost always
+      // an oversized canvas). Fail loudly with an actionable message rather
+      // than letting the downstream embed throw a misleading "not a PNG" error.
+      if (!jpegBase64) {
+        throw new Error(`Page ${i + 1} could not be encoded — the page may be too large at this DPI. Try a lower DPI.`);
+      }
+
+      let embeddedImage;
+      try {
+        embeddedImage = await newPdf.embedJpg(Buffer.from(jpegBase64, 'base64'));
+      } catch (embedErr) {
+        // Fallback to PNG if JPEG embedding fails (e.g., grayscale edge case)
+        console.warn(`[compress] JPEG embed failed for page ${i + 1}, trying PNG`);
+        const pngDataUrl = item.canvas.toDataURL('image/png');
+        const pngBase64 = pngDataUrl.substring(pngDataUrl.indexOf(',') + 1);
+        if (!pngBase64) {
+          throw new Error(`Page ${i + 1} could not be encoded — the page may be too large at this DPI. Try a lower DPI.`);
+        }
+        embeddedImage = await newPdf.embedPng(Buffer.from(pngBase64, 'base64'));
+      }
+
+      const newPage = newPdf.addPage([item.width, item.height]);
+      newPage.drawImage(embeddedImage, { x: 0, y: 0, width: item.width, height: item.height });
+
+      const pct = Math.round(70 + ((i + 1) / canvases.length) * 28);
+      showProgress(`Assembling page ${i + 1} of ${canvases.length}...`, pct);
+    }
+
+    const pdfBytes = await newPdf.save({ useObjectStreams: true });
+    return Buffer.from(pdfBytes).toString('base64');
   }
 
   // ============================================================
@@ -552,45 +545,49 @@
     dom.compressBtn.disabled = true;
     compressedBase64 = null;
 
+    const profile = PROFILES[compressionProfile];
+
+    // Sync custom DPI into the custom profile before compressing
+    if (compressionProfile === 'custom') {
+      profile.dpi = customDpi;
+    }
+
     try {
       let resultBase64;
 
       if (compressionProfile === 'lossless') {
-        showProgress('Optimizing PDF structure...', 30);
+        showProgress('Optimizing PDF structure...', 20);
         resultBase64 = await compressLossless(tab.base64);
-        showProgress('Optimization complete', 100);
-      } else {
-        const profile = PROFILES[compressionProfile];
-        showProgress('Preparing compression...', 0);
+        showProgress('Done', 100);
 
-        // Monkey-patch updateProgress so compressRasterized can call it
-        // (it's in the same scope)
+      } else {
+        showProgress('Preparing...', 0);
         resultBase64 = await compressRasterized(
           tab.base64,
-          profile.renderScale,
-          profile.targetRatio
+          profile.dpi,
+          profile.jpegQuality
         );
-
-        showProgress('Compression complete', 100);
+        showProgress('Done', 100);
       }
 
       compressedBase64 = resultBase64;
       updateStats(tab);
       dom.savePdfBtn.disabled = false;
 
-      const actualBytes = base64ToBytes(resultBase64);
       const originalBytes = base64ToBytes(tab.base64);
-      const savings = Math.round((1 - actualBytes / originalBytes) * 100);
+      const actualBytes   = base64ToBytes(resultBase64);
+      const savings       = Math.round((1 - actualBytes / originalBytes) * 100);
 
-      console.log(`[compress] Profile: ${compressionProfile}`);
-      console.log(`[compress] Original: ${formatBytes(originalBytes)} → Compressed: ${formatBytes(actualBytes)} (${savings}% saved)`);
+      console.log(`[compress] Profile: ${compressionProfile}${profile.dpi ? ' @ ' + profile.dpi + ' DPI' : ''}`);
+      console.log(`[compress] ${formatBytes(originalBytes)} → ${formatBytes(actualBytes)} (${savings}% saved)`);
 
-      // Brief delay so user sees the 100% complete state
       setTimeout(hideProgress, 800);
+
     } catch (err) {
       console.error('[compress] Fatal error:', err);
       hideProgress();
-      alert(`Compression failed: ${err.message}\n\nPlease open DevTools (Cmd+Opt+I) for detailed logs.`);
+      const msg = (err && err.message) || (err && err.toString && err.toString()) || String(err);
+      alert(`Compression failed: ${msg}\n\nPlease open DevTools (Cmd+Opt+I) for detailed logs.`);
       compressedBase64 = null;
       resetStats();
     } finally {
@@ -627,16 +624,23 @@
   function selectProfile(profile) {
     compressionProfile = profile;
 
-    // Update UI
+    // Update profile card highlight
     dom.profileList.querySelectorAll('.compress-profile-card').forEach(card => {
       card.classList.toggle('selected', card.dataset.profile === profile);
     });
 
-    // Reset compressed data since profile changed
+    // Show / hide the Custom DPI panel
+    if (profile === 'custom') {
+      dom.dpiPanel.classList.remove('hidden');
+    } else {
+      dom.dpiPanel.classList.add('hidden');
+    }
+
+    // Reset previous compression result since profile changed
     compressedBase64 = null;
     dom.savePdfBtn.disabled = true;
 
-    // Re-estimate with new profile
+    // Refresh stats (clears compressed size, updates original)
     const tab = getActiveTab();
     if (tab) {
       updateStats(tab);
@@ -644,13 +648,35 @@
   }
 
   // ============================================================
+  // Custom DPI Slider
+  // ============================================================
+  function onDpiSliderInput() {
+    const dpi = parseInt(dom.dpiSlider.value, 10);
+    customDpi = dpi;
+    PROFILES.custom.dpi = dpi;
+
+    // Update labels
+    dom.dpiValueLabel.textContent = dpi + ' DPI';
+    dom.customDpiBadge.textContent = dpi + ' DPI';
+    dom.dpiHint.textContent = getDpiHint(dpi);
+
+    // If a previous compression result exists, invalidate it
+    if (compressedBase64) {
+      compressedBase64 = null;
+      dom.savePdfBtn.disabled = true;
+      const tab = getActiveTab();
+      if (tab) updateStats(tab);
+    }
+  }
+
+  // ============================================================
   // Event Binding
   // ============================================================
   function bindEvents() {
-    // PDF drop zone
-    const pdfViewer = document.querySelector('.feature-main');
-    pdfViewer.addEventListener('dragover', (e) => e.preventDefault());
-    pdfViewer.addEventListener('drop', (e) => {
+    // Drag-and-drop onto the main area
+    const featureMain = document.querySelector('.feature-main');
+    featureMain.addEventListener('dragover', (e) => e.preventDefault());
+    featureMain.addEventListener('drop', (e) => {
       e.preventDefault();
       const files = e.dataTransfer.files;
       if (files.length > 0 && pdfTabs) {
@@ -669,15 +695,13 @@
     dom.pdfDropArea.addEventListener('click', openPdfDialog);
     dom.openPdfBtn.addEventListener('click', openPdfDialog);
 
-    // Page navigation
-    dom.prevPageBtn.addEventListener('click', prevPage);
-    dom.nextPageBtn.addEventListener('click', nextPage);
+    // Page navigation is handled by the global sidebar via window.SmartPDF.setPageNav
 
-    // Compress & Save buttons
+    // Compress & Save
     dom.compressBtn.addEventListener('click', compressPdf);
     dom.savePdfBtn.addEventListener('click', saveCompressedPdf);
 
-    // Profile selection
+    // Profile card clicks
     dom.profileList.addEventListener('click', (e) => {
       const card = e.target.closest('.compress-profile-card');
       if (card && card.dataset.profile) {
@@ -685,21 +709,15 @@
       }
     });
 
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') {
-        prevPage();
-      } else if (e.key === 'ArrowRight') {
-        nextPage();
-      }
-    });
+    // DPI slider
+    dom.dpiSlider.addEventListener('input', onDpiSliderInput);
 
-    // Window resize
+    // Keyboard page navigation is handled globally by main.js
+
+    // Re-render preview on resize
     window.addEventListener('resize', () => {
       const tab = getActiveTab();
-      if (tab) {
-        renderPreview(tab);
-      }
+      if (tab) renderPreview(tab);
     });
   }
 
@@ -713,7 +731,20 @@
     initPdfTabs();
     bindEvents();
     resetStats();
-    console.log('Compress feature initialized with shared PdfTabs');
+
+    // Register with global page navigation sidebar
+    if (typeof window.SmartPDF.setPageNav === 'function') {
+      window.SmartPDF.setPageNav(pdfTabs, () => {
+        const tab = getActiveTab();
+        if (tab) renderPreview(tab);
+      }, renderThumbnails);
+    }
+
+    // Initialise custom DPI slider display
+    onDpiSliderInput();
+
+    console.log('[compress] Initialized — DPI-based compression engine ready');
+    console.log('[compress] Profiles: balanced (150 DPI), maximum (96 DPI), lossless (no rasterize), custom (slider)');
   }
 
   if (!window.__featureInit) window.__featureInit = {};

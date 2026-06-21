@@ -17,14 +17,22 @@ let currentFeature = 'esign';
 let loadedScripts = {};
 let sharedLoaded = false;
 
+// Page navigation state (features register via setPageNav)
+let pageNavPdfTabs = null;
+let pageNavRenderCallback = null;
+let pageNavThumbnailCallback = null;
+
 // DOM refs
-const sidebar = document.getElementById('sidebar');
+const toolbarNav = document.getElementById('toolbarNav');
 const content = document.getElementById('content');
 const featureMeta = document.getElementById('featureMeta');
+const pageNavFileNameEl = document.getElementById('pageNavFileName');
+const pageNavInfo = document.getElementById('pageNavInfo');
+const pageNavThumbnails = document.getElementById('pageNavThumbnails');
 
-// Navigation
-sidebar.addEventListener('click', (e) => {
-  const btn = e.target.closest('.nav-btn');
+// Navigation via toolbar
+toolbarNav.addEventListener('click', (e) => {
+  const btn = e.target.closest('.toolbar-nav-btn');
   if (!btn) return;
 
   const feature = btn.dataset.feature;
@@ -58,12 +66,15 @@ function loadSharedModules() {
 function navigateTo(feature) {
   currentFeature = feature;
 
-  // Update active nav button
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.nav-btn[data-feature="${feature}"]`).classList.add('active');
+  // Update active toolbar nav button
+  document.querySelectorAll('.toolbar-nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.toolbar-nav-btn[data-feature="${feature}"]`).classList.add('active');
 
   // Clear content
   content.innerHTML = '';
+
+  // Reset page nav sidebar
+  resetPageNavSidebar();
 
   // Load feature HTML
   const featurePath = features[feature].path;
@@ -113,6 +124,103 @@ function navigateTo(feature) {
       featureMeta.textContent = `📄 ${features[feature].label} (Coming Soon)`;
     });
 }
+
+// ============================================================
+// Page Navigation Sidebar API
+// ============================================================
+
+/**
+ * Register a feature's PdfTabs instance and callbacks so
+ * the global page-nav sidebar with thumbnails can control navigation.
+ *
+ * @param {Object} pdfTabsInstance - The feature's PdfTabs instance
+ * @param {Function} renderCallback - Called after page change: () => void
+ * @param {Function} thumbnailCallback - Called to render thumbnails: (containerEl) => void
+ */
+function setPageNav(pdfTabsInstance, renderCallback, thumbnailCallback) {
+  pageNavPdfTabs = pdfTabsInstance;
+  pageNavRenderCallback = renderCallback;
+  pageNavThumbnailCallback = thumbnailCallback;
+
+  updatePageNavSidebar();
+}
+
+/**
+ * Update the page nav sidebar display based on current state.
+ */
+function updatePageNavSidebar() {
+  const tab = pageNavPdfTabs ? pageNavPdfTabs.getActiveTab() : null;
+
+  if (tab) {
+    pageNavFileNameEl.textContent = `📄 ${tab.fileName}`;
+    pageNavInfo.textContent = `Page ${tab.currentPage} / ${tab.totalPages}`;
+    // Re-render thumbnails
+    if (typeof pageNavThumbnailCallback === 'function') {
+      pageNavThumbnails.innerHTML = '';
+      pageNavThumbnailCallback(pageNavThumbnails);
+    }
+  } else {
+    pageNavFileNameEl.textContent = '📄 No file open';
+    pageNavInfo.textContent = 'Page — / —';
+    pageNavThumbnails.innerHTML = '';
+  }
+}
+
+/**
+ * Reset the page nav sidebar when switching features.
+ */
+function resetPageNavSidebar() {
+  pageNavPdfTabs = null;
+  pageNavRenderCallback = null;
+  pageNavThumbnailCallback = null;
+  pageNavFileNameEl.textContent = '📄 No file open';
+  pageNavInfo.textContent = 'Page — / —';
+  pageNavThumbnails.innerHTML = '';
+}
+
+// Click a thumbnail to navigate to that page
+pageNavThumbnails.addEventListener('click', (e) => {
+  const item = e.target.closest('.page-nav-thumb-item');
+  if (!item || !pageNavPdfTabs || !pageNavRenderCallback) return;
+
+  const pageNum = parseInt(item.dataset.page, 10);
+  if (!pageNum) return;
+
+  if (pageNavPdfTabs.goToPage(pageNum)) {
+    pageNavRenderCallback();
+    updatePageNavSidebar();
+  }
+});
+
+// Keyboard navigation: ArrowUp / ArrowDown (also ArrowLeft/ArrowRight for convenience)
+document.addEventListener('keydown', (e) => {
+  if (!pageNavPdfTabs || !pageNavRenderCallback) return;
+
+  let changed = false;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    changed = pageNavPdfTabs.nextPage();
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    changed = pageNavPdfTabs.prevPage();
+  }
+
+  if (changed) {
+    e.preventDefault();
+    pageNavRenderCallback();
+    updatePageNavSidebar();
+    // Scroll the active thumbnail into view
+    const activeThumb = pageNavThumbnails.querySelector('.page-nav-thumb-item.active');
+    if (activeThumb) {
+      activeThumb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+});
+
+// ============================================================
+// Expose API for feature modules
+// ============================================================
+if (!window.SmartPDF) window.SmartPDF = {};
+window.SmartPDF.setPageNav = setPageNav;
+window.SmartPDF.updatePageNavSidebar = updatePageNavSidebar;
 
 // Initialize with eSign feature
 document.addEventListener('DOMContentLoaded', () => {
