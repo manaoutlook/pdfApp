@@ -1,6 +1,7 @@
 // ============================================================
 // SmartPDF - eSign Feature
 // Uses the shared PdfTabs component for multi-file management.
+// Renders ALL pages in a vertically scrollable container.
 // ============================================================
 
 (function() {
@@ -29,6 +30,11 @@
   let resizeStartW = 0;
   let resizeStartH = 0;
 
+  // Page wrapper tracking: pageNum -> { wrapper, canvas, overlay }
+  let pageWrappers = new Map();
+  let intersectionObserver = null;
+  let isScrollingProgrammatically = false;
+
   // ============================================================
   // DOM References
   // ============================================================
@@ -38,8 +44,7 @@
     dom = {
       pdfDropArea: document.getElementById('esign-pdfDropArea'),
       pdfPageContainer: document.getElementById('esign-pdfPageContainer'),
-      pdfCanvas: document.getElementById('esign-pdf-canvas'),
-      sigOverlay: document.getElementById('esign-signature-overlay'),
+      pdfPagesScroll: document.getElementById('esign-pdfPagesScroll'),
       pageInfoBottom: document.getElementById('esign-pageInfoBottom'),
       fileName: document.getElementById('esign-fileName'),
       openPdfBtn: document.getElementById('esign-openPdfBtn'),
@@ -92,7 +97,7 @@
     dom.pdfPageContainer.classList.remove('hidden');
     dom.pdfDropArea.classList.add('hidden');
     updateTabInfo(tab);
-    renderPage(tab);
+    renderAllPages(tab);
     // Sync the global page navigation sidebar
     if (typeof window.SmartPDF.updatePageNavSidebar === 'function') {
       window.SmartPDF.updatePageNavSidebar();
@@ -113,6 +118,8 @@
 
   function onDocumentLoaded(tab) {
     updateTabInfo(tab);
+    // Don't call renderAllPages here — onTabSwitched handles it immediately after
+    // in _loadDocument. Calling both causes concurrent async rendering and page duplication.
     // Sync the global page navigation sidebar
     if (typeof window.SmartPDF.updatePageNavSidebar === 'function') {
       window.SmartPDF.updatePageNavSidebar();
@@ -161,7 +168,6 @@
     dom.sigCanvas.width = sigCanvasWidth * dpr;
     dom.sigCanvas.height = sigCanvasHeight * dpr;
     if (sigCtx) {
-      // Use setTransform to REPLACE (not multiply) the scale — prevents dpr accumulation
       sigCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       sigCtx.strokeStyle = '#1a1a2e';
       sigCtx.lineWidth = 3;
@@ -397,39 +403,208 @@
   }
 
   // ============================================================
-  // Page Rendering
+  // Page Rendering - Renders ALL pages in scrollable container
   // ============================================================
-  async function renderPage(tab) {
-    if (!tab || !tab.pdfDoc) return;
 
-    const page = await tab.pdfDoc.getPage(tab.currentPage);
-    const viewport = page.getViewport({ scale });
-
-    const canvas = dom.pdfCanvas;
-    const context = canvas.getContext('2d');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport,
-    };
-
-    await page.render(renderContext).promise;
-
-    dom.sigOverlay.style.width = canvas.width + 'px';
-    dom.sigOverlay.style.height = canvas.height + 'px';
-
-    updateTabInfo(tab);
-
-    clearOverlay();
-    getTabSignatures(tab)
-      .filter((s) => s.page === tab.currentPage)
-      .forEach((s) => renderPlaceSignature(s));
+  /**
+   * Clear all page wrappers from the scroll container.
+   */
+  function clearAllPages() {
+    if (dom.pdfPagesScroll) {
+      dom.pdfPagesScroll.innerHTML = '';
+    }
+    pageWrappers = new Map();
+    if (intersectionObserver) {
+      intersectionObserver.disconnect();
+      intersectionObserver = null;
+    }
   }
 
-  function clearOverlay() {
-    dom.sigOverlay.innerHTML = '';
+  /**
+   * Render all pages of the active tab into the scroll container.
+   */
+  async function renderAllPages(tab) {
+    if (!tab || !tab.pdfDoc || !dom.pdfPagesScroll) return;
+
+    clearAllPages();
+
+    const totalPages = tab.totalPages;
+
+    for (let i = 1; i <= totalPages; i++) {
+      // Create wrapper
+      const wrapper = document.createElement('div');
+      wrapper.className = 'pdf-page-wrapper';
+      wrapper.dataset.page = i;
+      wrapper.style.display = 'inline-block';
+
+      // Create canvas
+      const canvas = document.createElement('canvas');
+      wrapper.appendChild(canvas);
+
+      // Create overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'pdf-page-overlay';
+      wrapper.appendChild(overlay);
+
+      dom.pdfPagesScroll.appendChild(wrapper);
+
+      // Store references
+      pageWrappers.set(i, { wrapper, canvas, overlay });
+
+      // Render the page into the canvas
+      try {
+        const page = await tab.pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        overlay.style.width = canvas.width + 'px';
+        overlay.style.height = canvas.height + 'px';
+      } catch (err) {
+        console.error(`Failed to render page ${i}:`, err);
+      }
+    }
+
+    // Re-render signatures for each page
+    restoreAllSignatures(tab);
+
+    // Start IntersectionObserver to detect which page is visible
+    setupIntersectionObserver(tab);
+
+    // Scroll to the current page
+    scrollToPage(tab.currentPage, false);
+  }
+
+  /**
+   * Restore placed signatures onto their respective page overlays.
+   */
+  function restoreAllSignatures(tab) {
+    const signatures = getTabSignatures(tab);
+    for (const sig of signatures) {
+      const pw = pageWrappers.get(sig.page);
+      if (pw) {
+        renderPlaceSignatureOnOverlay(sig, pw.overlay);
+      }
+    }
+  }
+
+  /**
+   * Set up IntersectionObserver to track which page is currently most visible.
+   */
+  function setupIntersectionObserver(tab) {
+    if (intersectionObserver) {
+      intersectionObserver.disconnect();
+    }
+
+    // Threshold map: pageNum -> visible ratio
+    let visibilityMap = new Map();
+
+    intersectionObserver = new IntersectionObserver((entries) => {
+      if (isScrollingProgrammatically) return;
+
+      for (const entry of entries) {
+        const pageNum = parseInt(entry.target.dataset.page, 10);
+        if (pageNum) {
+          visibilityMap.set(pageNum, entry.isIntersecting ? entry.intersectionRatio : 0);
+        }
+      }
+
+      // Find the page with the highest intersection ratio
+      let bestPage = tab.currentPage;
+      let bestRatio = 0;
+      for (const [pageNum, ratio] of visibilityMap) {
+        if (ratio > bestRatio) {
+          bestRatio = ratio;
+          bestPage = pageNum;
+        }
+      }
+
+      if (bestRatio > 0 && bestPage !== tab.currentPage) {
+        tab.currentPage = bestPage;
+        updateTabInfo(tab);
+        // Sync the global page navigation sidebar
+        if (typeof window.SmartPDF.updatePageNavSidebar === 'function') {
+          window.SmartPDF.updatePageNavSidebar();
+        }
+      }
+    }, {
+      root: dom.pdfPagesScroll,
+      threshold: [0, 0.1, 0.3, 0.5, 0.7, 0.9, 1],
+    });
+
+    for (const [pageNum, pw] of pageWrappers) {
+      intersectionObserver.observe(pw.wrapper);
+    }
+  }
+
+  /**
+   * Scroll to a specific page in the container.
+   * @param {number} pageNum
+   * @param {boolean} smooth - whether to animate smoothly
+   */
+  function scrollToPage(pageNum, smooth) {
+    const pw = pageWrappers.get(pageNum);
+    if (!pw) return;
+
+    const tab = getActiveTab();
+    if (tab) {
+      tab.currentPage = pageNum;
+      updateTabInfo(tab);
+    }
+
+    isScrollingProgrammatically = true;
+    pw.wrapper.scrollIntoView({
+      block: 'start',
+      behavior: smooth !== false ? 'smooth' : 'auto',
+    });
+
+    // Reset the flag after the scroll animation completes
+    clearTimeout(isScrollingProgrammatically._timeout);
+    isScrollingProgrammatically._timeout = setTimeout(() => {
+      isScrollingProgrammatically = false;
+    }, 600);
+  }
+
+  /**
+   * Scroll to the current page (called as render callback from sidebar).
+   */
+  function scrollToCurrentPage() {
+    const tab = getActiveTab();
+    if (!tab) return;
+    scrollToPage(tab.currentPage, true);
+  }
+
+  /**
+   * Navigate to next page by scrolling.
+   */
+  function scrollToNextPage() {
+    const tab = getActiveTab();
+    if (!tab || tab.currentPage >= tab.totalPages) return false;
+    scrollToPage(tab.currentPage + 1, true);
+    return true;
+  }
+
+  /**
+   * Navigate to previous page by scrolling.
+   */
+  function scrollToPrevPage() {
+    const tab = getActiveTab();
+    if (!tab || tab.currentPage <= 1) return false;
+    scrollToPage(tab.currentPage - 1, true);
+    return true;
+  }
+
+  /**
+   * Jump to a specific page number (used by sidebar thumbnails and keyboard nav).
+   */
+  function goToPageAndScroll(pageNum) {
+    const tab = getActiveTab();
+    if (!tab) return false;
+    if (pageNum < 1 || pageNum > tab.totalPages) return false;
+    scrollToPage(pageNum, true);
+    return true;
   }
 
   // ============================================================
@@ -442,17 +617,28 @@
       return;
     }
 
+    // Get the overlay for the current page
+    const pageNum = tab.currentPage;
+    const pw = pageWrappers.get(pageNum);
+    if (!pw) {
+      alert('Page not rendered yet.');
+      return;
+    }
+
+    const overlay = pw.overlay;
+    const canvas = pw.canvas;
+
     const img = new Image();
     img.onload = () => {
-      const overlayWidth = dom.sigOverlay.clientWidth || 600;
-      const overlayHeight = dom.sigOverlay.clientHeight || 800;
+      const overlayWidth = overlay.clientWidth || canvas.width || 600;
+      const overlayHeight = overlay.clientHeight || canvas.height || 800;
 
       const sigWidth = Math.min(img.width * 0.5, overlayWidth * 0.4);
       const sigHeight = (sigWidth / img.width) * img.height;
 
       const sig = {
         id: placedSigIdCounter++,
-        page: tab.currentPage,
+        page: pageNum,
         x: (overlayWidth - sigWidth) / 2,
         y: (overlayHeight - sigHeight) / 2,
         width: sigWidth,
@@ -465,15 +651,16 @@
       const signatures = getTabSignatures(tab);
       signatures.push(sig);
       pdfTabs.setTabDirty(tab.id, true);
-      renderPlaceSignature(sig);
+      renderPlaceSignatureOnOverlay(sig, overlay);
     };
     img.src = dataUrl;
   }
 
-  function renderPlaceSignature(sig) {
+  function renderPlaceSignatureOnOverlay(sig, overlay) {
     const el = document.createElement('div');
     el.className = 'placed-signature';
     el.dataset.sigId = sig.id;
+    el.dataset.page = sig.page;
     el.style.left = sig.x + 'px';
     el.style.top = sig.y + 'px';
     el.style.width = sig.width + 'px';
@@ -507,8 +694,9 @@
     el.addEventListener('mousedown', (e) => {
       if (e.target.classList.contains('remove-btn') || e.target.classList.contains('resize-handle')) return;
       dragTarget = el;
-      dragOffsetX = e.clientX - el.getBoundingClientRect().left;
-      dragOffsetY = e.clientY - el.getBoundingClientRect().top;
+      const rect = el.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
       e.preventDefault();
     });
 
@@ -522,23 +710,26 @@
       resizeStartH = parseFloat(el.style.height);
     });
 
-    dom.sigOverlay.appendChild(el);
+    overlay.appendChild(el);
   }
 
   function updateSigPositions() {
     const tab = getActiveTab();
     if (!tab) return;
-    const els = dom.sigOverlay.querySelectorAll('.placed-signature');
-    els.forEach((el) => {
-      const sigId = parseInt(el.dataset.sigId);
-      const sig = getTabSignatures(tab).find((s) => s.id === sigId);
-      if (sig) {
-        sig.x = parseFloat(el.style.left);
-        sig.y = parseFloat(el.style.top);
-        sig.width = parseFloat(el.style.width);
-        sig.height = parseFloat(el.style.height);
-      }
-    });
+
+    for (const [pageNum, pw] of pageWrappers) {
+      const els = pw.overlay.querySelectorAll('.placed-signature');
+      els.forEach((el) => {
+        const sigId = parseInt(el.dataset.sigId);
+        const sig = getTabSignatures(tab).find((s) => s.id === sigId);
+        if (sig) {
+          sig.x = parseFloat(el.style.left);
+          sig.y = parseFloat(el.style.top);
+          sig.width = parseFloat(el.style.width);
+          sig.height = parseFloat(el.style.height);
+        }
+      });
+    }
   }
 
   // ============================================================
@@ -548,7 +739,6 @@
     const tab = getActiveTab();
     if (!tab || !tab.pdfDoc) return;
 
-    const thumbScale = 0.15; // Small scale for thumbnails
     const totalPages = tab.totalPages;
     const activePage = tab.currentPage;
 
@@ -638,8 +828,15 @@
         const page = pdfDocLib.getPage(sig.page - 1);
         const { width: pageWidth, height: pageHeight } = page.getSize();
 
-        const canvasWidth = dom.pdfCanvas.width;
-        const canvasHeight = dom.pdfCanvas.height;
+        // Get canvas dimensions from the page wrapper
+        const pw = pageWrappers.get(sig.page);
+        if (!pw) {
+          console.error(`[saveSignedPdf] Page wrapper not found for page ${sig.page}`);
+          continue;
+        }
+
+        const canvasWidth = pw.canvas.width;
+        const canvasHeight = pw.canvas.height;
 
         if (!canvasWidth || !canvasHeight) {
           console.error('[saveSignedPdf] Canvas dimensions are zero — cannot compute coordinates');
@@ -721,7 +918,7 @@
       console.error('[saveSignedPdf] Fatal error:', err);
       const devToolsShortcut = window.SmartPDF && window.SmartPDF.getDevToolsShortcut
         ? window.SmartPDF.getDevToolsShortcut()
-        : 'Cmd+Opt+I';
+        : window.SmartPDF.isMac ? 'Cmd+Opt+I' : 'Ctrl+Shift+I';
       alert(`Failed to save PDF: ${err.message}\n\nPlease open DevTools (${devToolsShortcut}) for detailed logs.`);
     }
   }
@@ -736,7 +933,10 @@
   function setupGlobalEvents() {
     document.addEventListener('mousemove', (e) => {
       if (dragTarget) {
-        const overlayRect = dom.sigOverlay.getBoundingClientRect();
+        // Find the overlay that contains this drag target
+        const overlay = dragTarget.closest('.pdf-page-overlay');
+        if (!overlay) return;
+        const overlayRect = overlay.getBoundingClientRect();
         let newX = e.clientX - overlayRect.left - dragOffsetX;
         let newY = e.clientY - overlayRect.top - dragOffsetY;
         newX = Math.max(0, Math.min(newX, overlayRect.width - parseFloat(dragTarget.style.width)));
@@ -818,8 +1018,6 @@
     dom.pdfDropArea.addEventListener('click', openPdfDialog);
     dom.openPdfBtn.addEventListener('click', openPdfDialog);
 
-    // Page navigation is handled by the global sidebar via window.SmartPDF.setPageNav
-
     dom.savePdfBtn.addEventListener('click', saveSignedPdf);
 
     // Window resize
@@ -850,12 +1048,11 @@
     // Register with global page navigation sidebar
     if (typeof window.SmartPDF.setPageNav === 'function') {
       window.SmartPDF.setPageNav(pdfTabs, () => {
-        const tab = getActiveTab();
-        if (tab) renderPage(tab);
+        scrollToCurrentPage();
       }, renderThumbnails);
     }
 
-    console.log('eSign feature initialized with shared PdfTabs');
+    console.log('eSign feature initialized with scrollable multi-page view');
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {

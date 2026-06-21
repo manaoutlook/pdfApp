@@ -38,7 +38,6 @@ let pageNavThumbnailCallback = null;
 const toolbarNav = document.getElementById('toolbarNav');
 const content = document.getElementById('content');
 const featureMeta = document.getElementById('featureMeta');
-const pageNavFileNameEl = document.getElementById('pageNavFileName');
 const pageNavInfo = document.getElementById('pageNavInfo');
 const pageNavThumbnails = document.getElementById('pageNavThumbnails');
 
@@ -152,7 +151,6 @@ function updatePageNavSidebar() {
   const tab = pageNavPdfTabs ? pageNavPdfTabs.getActiveTab() : null;
 
   if (tab) {
-    pageNavFileNameEl.textContent = `📄 ${tab.fileName}`;
     pageNavInfo.textContent = `Page ${tab.currentPage} / ${tab.totalPages}`;
     // Re-render thumbnails
     if (typeof pageNavThumbnailCallback === 'function') {
@@ -160,7 +158,6 @@ function updatePageNavSidebar() {
       pageNavThumbnailCallback(pageNavThumbnails);
     }
   } else {
-    pageNavFileNameEl.textContent = '📄 No file open';
     pageNavInfo.textContent = 'Page — / —';
     pageNavThumbnails.innerHTML = '';
   }
@@ -173,7 +170,6 @@ function resetPageNavSidebar() {
   pageNavPdfTabs = null;
   pageNavRenderCallback = null;
   pageNavThumbnailCallback = null;
-  pageNavFileNameEl.textContent = '📄 No file open';
   pageNavInfo.textContent = 'Page — / —';
   pageNavThumbnails.innerHTML = '';
 }
@@ -200,6 +196,29 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
     changed = pageNavPdfTabs.nextPage();
   } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    changed = pageNavPdfTabs.prevPage();
+  }
+
+  if (changed) {
+    e.preventDefault();
+    pageNavRenderCallback();
+    updatePageNavSidebar();
+    // Scroll the active thumbnail into view
+    const activeThumb = pageNavThumbnails.querySelector('.page-nav-thumb-item.active');
+    if (activeThumb) {
+      activeThumb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+});
+
+// Mouse scroll navigation on the page navigation sidebar
+pageNavThumbnails.addEventListener('wheel', (e) => {
+  if (!pageNavPdfTabs || !pageNavRenderCallback) return;
+
+  let changed = false;
+  if (e.deltaY > 0) {
+    changed = pageNavPdfTabs.nextPage();
+  } else if (e.deltaY < 0) {
     changed = pageNavPdfTabs.prevPage();
   }
 
