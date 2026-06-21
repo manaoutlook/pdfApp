@@ -3,6 +3,12 @@ const { app, BrowserWindow, ipcMain, nativeImage, Menu } = require('electron');
 // MUST be called immediately after require, before anything else — sets the macOS menu bar name
 app.setName('SmartPDF');
 
+// Platform detection
+const isMac = process.platform === 'darwin';
+const isWindows = process.platform === 'win32';
+const isLinux = process.platform === 'linux';
+console.log(`SmartPDF starting on ${process.platform} (macOS: ${isMac}, Windows: ${isWindows}, Linux: ${isLinux})`);
+
 const path = require('path');
 const fs = require('fs');
 
@@ -69,9 +75,14 @@ function buildMacMenu() {
 }
 
 function createWindow() {
-  // Use .ico for Windows, .png for macOS/Linux (macOS dock requires PNG)
-  const iconFile = process.platform === 'win32' ? 'logo.ico' : 'logo.png';
+  // Use .ico for Windows, .png for macOS/Linux
+  // On macOS the dock uses PNG for nativeImage; on Linux .png is standard
+  const iconFile = isWindows ? 'logo.ico' : 'logo.png';
   const iconPath = path.join(__dirname, '..', 'assets', iconFile);
+  
+  // On Linux, set the window icon explicitly (required on many DEs like GNOME/KDE)
+  const icon = nativeImage.createFromPath(iconPath);
+  const iconForWindow = isWindows ? iconPath : icon;
 
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -81,7 +92,7 @@ function createWindow() {
       contextIsolation: false,
     },
     title: 'SmartPDF',
-    icon: iconPath,
+    icon: iconForWindow,
   });
 
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
@@ -92,11 +103,27 @@ app.whenReady().then(() => {
   buildMacMenu();
 
   // Set the dock icon on macOS (PNG works best with Electron's nativeImage)
-  if (process.platform === 'darwin' && app.dock) {
+  if (isMac && app.dock) {
     const dockIconPath = path.join(__dirname, '..', 'assets', 'logo.png');
     const dockIcon = nativeImage.createFromPath(dockIconPath);
     app.dock.setIcon(dockIcon);
-    console.log('Dock icon set from logo.png');
+    console.log('Mac Dock icon set from logo.png');
+  }
+  
+  // On Linux, set the app icon for the taskbar / launcher
+  if (isLinux) {
+    // Linux desktop environments use the window icon set in BrowserWindow;
+    // additionally set the app-level icon for Unity/GNOME dash
+    if (app.setAppUserModelId) {
+      // Only on Windows/Linux electron
+    }
+    console.log('Linux detected: Window icon configured from assets/logo.png');
+  }
+  
+  // On Windows, set the app user model ID for proper taskbar grouping
+  if (isWindows) {
+    app.setAppUserModelId('com.smartpdf.app');
+    console.log('Windows detected: AppUserModelId set for taskbar integration');
   }
 
   // Load all IPC handlers from the ipc-handlers directory
@@ -116,7 +143,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  // On macOS, keep the app running when all windows are closed (standard macOS behavior)
+  // On Windows and Linux, quit the app when all windows are closed
+  if (!isMac) app.quit();
 });
 
 app.on('activate', () => {

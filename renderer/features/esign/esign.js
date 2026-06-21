@@ -742,7 +742,10 @@
       }
     } catch (err) {
       console.error('[saveSignedPdf] Fatal error:', err);
-      alert(`Failed to save PDF: ${err.message}\n\nPlease open DevTools (Cmd+Opt+I) for detailed logs.`);
+      const devToolsShortcut = window.SmartPDF && window.SmartPDF.getDevToolsShortcut
+        ? window.SmartPDF.getDevToolsShortcut()
+        : 'Cmd+Opt+I';
+      alert(`Failed to save PDF: ${err.message}\n\nPlease open DevTools (${devToolsShortcut}) for detailed logs.`);
     }
   }
 

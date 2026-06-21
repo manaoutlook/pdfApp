@@ -4,6 +4,22 @@
 
 const { ipcRenderer } = require('electron');
 
+// Platform detection for cross-platform compatibility
+const platform = process.platform;
+const isMac = platform === 'darwin';
+const isWindows = platform === 'win32';
+const isLinux = platform === 'linux';
+
+// Expose platform info to feature modules
+if (!window.SmartPDF) window.SmartPDF = {};
+window.SmartPDF.platform = platform;
+window.SmartPDF.isMac = isMac;
+window.SmartPDF.isWindows = isWindows;
+window.SmartPDF.isLinux = isLinux;
+window.SmartPDF.getDevToolsShortcut = function() {
+  return isMac ? 'Cmd+Opt+I' : 'Ctrl+Shift+I';
+};
+
 // Feature registry
 const features = {
   esign:   { label: 'eSign',   path: 'features/esign/esign.html' },

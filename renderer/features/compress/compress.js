@@ -587,7 +587,10 @@
       console.error('[compress] Fatal error:', err);
       hideProgress();
       const msg = (err && err.message) || (err && err.toString && err.toString()) || String(err);
-      alert(`Compression failed: ${msg}\n\nPlease open DevTools (Cmd+Opt+I) for detailed logs.`);
+      const devToolsShortcut = window.SmartPDF && window.SmartPDF.getDevToolsShortcut
+        ? window.SmartPDF.getDevToolsShortcut()
+        : 'Cmd+Opt+I';
+      alert(`Compression failed: ${msg}\n\nPlease open DevTools (${devToolsShortcut}) for detailed logs.`);
       compressedBase64 = null;
       resetStats();
     } finally {
