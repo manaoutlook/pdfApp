@@ -1,0 +1,258 @@
+/* ============================================================
+   SmartPDF - Compress Feature Styles
+   ============================================================ */
+
+/* PDF viewer inline toolbar (reuses .pdf-toolbar-inline from esign.css) */
+.pdf-toolbar-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  flex-wrap: wrap;
+}
+
+.pdf-toolbar-inline .spacer { flex: 1; }
+
+.pdf-toolbar-inline #compress-pageInfo {
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* PDF page container */
+.pdf-page-container {
+  position: relative;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  background: white;
+  display: inline-flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+
+#compress-pdf-canvas {
+  display: block;
+  max-width: 100%;
+}
+
+.page-info {
+  text-align: center;
+  padding: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* ============================================================
+   Compression Profile Cards
+   ============================================================ */
+.compress-profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compress-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 2px solid #dadce0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.compress-profile-card:hover {
+  border-color: #a8c7fa;
+  background: #f8faff;
+}
+
+.compress-profile-card.selected {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+}
+
+.compress-profile-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+.compress-profile-info {
+  flex: 1;
+}
+
+.compress-profile-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.compress-profile-desc {
+  font-size: 11px;
+  color: #888;
+}
+
+/* ============================================================
+   File Size Stats
+   ============================================================ */
+.compress-stats {
+  margin-bottom: 12px;
+}
+
+.compress-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.compress-stat-row:last-child {
+  border-bottom: none;
+}
+
+.compress-stat-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.compress-stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.compress-stat-value.savings {
+  color: #34a853;
+  font-size: 14px;
+}
+
+/* Size comparison bar */
+.compress-size-bar {
+  width: 100%;
+  height: 10px;
+  background: #e8eaed;
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+}
+
+.compress-size-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #34a853, #1a73e8);
+  border-radius: 5px;
+  transition: width 0.5s ease;
+  width: 0%;
+}
+
+/* ============================================================
+   Progress Overlay
+   ============================================================ */
+.compress-progress-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.compress-progress-overlay.hidden {
+  display: none;
+}
+
+.compress-progress-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  min-width: 300px;
+}
+
+.compress-progress-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e8eaed;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  animation: compress-spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes compress-spin {
+  to { transform: rotate(360deg); }
+}
+
+.compress-progress-text {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.compress-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e8eaed;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.compress-progress-fill {
+  height: 100%;
+  background: #1a73e8;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+/* ============================================================
+   Privacy Badge
+   ============================================================ */
+.compress-privacy-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  margin: 12px 0;
+  background: #f0fff4;
+  border: 1px solid #a8d8b5;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #2d8f47;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ============================================================
+   Compress Button (full-width variant)
+   ============================================================ */
+#compress-compressBtn {
+  transition: all 0.2s;
+}
+
+#compress-compressBtn:disabled {
+  cursor: not-allowed;
+}
+
+#compress-compressBtn:not(:disabled):hover {
+  background: #1557b0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+}
+
+#compress-compressBtn:not(:disabled):active {
+  transform: translateY(0);
+}

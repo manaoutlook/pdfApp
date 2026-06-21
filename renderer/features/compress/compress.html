@@ -1,0 +1,120 @@
+<!-- ============================================================
+     SmartPDF - Compress Feature
+     ============================================================ -->
+<div class="feature-page">
+  <!-- Main PDF Viewer -->
+  <div class="feature-main">
+    <!-- PDF Drop Area (shown when no PDF loaded) -->
+    <div class="pdf-drop-area drop-zone" id="compress-pdfDropArea">
+      <div class="icon">📄</div>
+      <h2>Drop PDF file here</h2>
+      <p>or click "Open PDF" to browse files</p>
+    </div>
+
+    <!-- PDF Page Container (shown after PDF loaded) -->
+    <div class="pdf-page-container hidden" id="compress-pdfPageContainer">
+      <!-- Shared PDF Tab Bar -->
+      <div class="pdf-tab-bar" id="compress-tabBar">
+        <div class="pdf-tab-scroll" id="compress-tabScroll"></div>
+      </div>
+      <div class="pdf-toolbar-inline">
+        <button id="compress-openPdfBtn" class="btn-primary">📄 Open PDF</button>
+        <span id="compress-fileName" class="file-name"></span>
+        <div class="spacer"></div>
+        <button id="compress-prevPageBtn" class="btn-secondary">◀ Prev</button>
+        <span id="compress-pageInfo">Page 0 / 0</span>
+        <button id="compress-nextPageBtn" class="btn-secondary">Next ▶</button>
+        <div style="width:12px"></div>
+        <button id="compress-savePdfBtn" class="btn-success" disabled>💾 Save Compressed PDF</button>
+      </div>
+      <div style="position:relative;display:inline-block;margin-top:12px">
+        <canvas id="compress-pdf-canvas"></canvas>
+      </div>
+      <div class="page-info" id="compress-pageInfoBottom"></div>
+    </div>
+
+    <!-- Progress overlay -->
+    <div class="compress-progress-overlay hidden" id="compress-progressOverlay">
+      <div class="compress-progress-card">
+        <div class="compress-progress-spinner"></div>
+        <div class="compress-progress-text" id="compress-progressText">Compressing...</div>
+        <div class="compress-progress-bar">
+          <div class="compress-progress-fill" id="compress-progressFill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="feature-sidebar">
+    <!-- Compression Profile -->
+    <div class="section">
+      <div class="section-title">🎯 Compression Profile</div>
+      <div class="compress-profile-list" id="compress-profileList">
+        <div class="compress-profile-card selected" data-profile="balanced">
+          <div class="compress-profile-icon">⚖️</div>
+          <div class="compress-profile-info">
+            <div class="compress-profile-name">Balanced</div>
+            <div class="compress-profile-desc">Good quality · 50% smaller</div>
+          </div>
+        </div>
+        <div class="compress-profile-card" data-profile="maximum">
+          <div class="compress-profile-icon">📦</div>
+          <div class="compress-profile-info">
+            <div class="compress-profile-name">Maximum</div>
+            <div class="compress-profile-desc">Smallest file · 75% smaller</div>
+          </div>
+        </div>
+        <div class="compress-profile-card" data-profile="lossless">
+          <div class="compress-profile-icon">🔒</div>
+          <div class="compress-profile-info">
+            <div class="compress-profile-name">Lossless</div>
+            <div class="compress-profile-desc">Zero quality loss · 15% smaller</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Size Stats -->
+    <div class="section">
+      <div class="section-title">📊 File Size</div>
+      <div class="compress-stats" id="compress-stats">
+        <div class="compress-stat-row">
+          <span class="compress-stat-label">Original</span>
+          <span class="compress-stat-value" id="compress-originalSize">—</span>
+        </div>
+        <div class="compress-stat-row">
+          <span class="compress-stat-label">Compressed</span>
+          <span class="compress-stat-value" id="compress-compressedSize">—</span>
+        </div>
+        <div class="compress-stat-row">
+          <span class="compress-stat-label">Savings</span>
+          <span class="compress-stat-value savings" id="compress-savingsPercent">—</span>
+        </div>
+      </div>
+      <div class="compress-size-bar">
+        <div class="compress-size-bar-inner" id="compress-sizeBarInner"></div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="section">
+      <button id="compress-compressBtn" class="btn-primary" style="width:100%;padding:12px;font-size:14px" disabled>🗜️ Compress</button>
+    </div>
+
+    <!-- Privacy Badge -->
+    <div class="compress-privacy-badge">
+      🔒 Your files never leave your computer
+    </div>
+
+    <!-- Instructions -->
+    <div class="section" style="background:#f8f9fa;padding:10px;border-radius:6px;font-size:12px;color:#555;line-height:1.5">
+      <strong>💡 How to use:</strong><br>
+      1. Open / Drop a PDF file<br>
+      2. Select a compression profile<br>
+      3. Click "Compress" to process<br>
+      4. Review the size savings<br>
+      5. Save the compressed PDF
+    </div>
+  </div>
+</div>
