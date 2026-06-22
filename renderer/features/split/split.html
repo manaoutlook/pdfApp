@@ -1,0 +1,128 @@
+<!-- ============================================================
+     SmartPDF - Split PDF Feature
+     Drop zone to load a PDF, then choose split mode and save parts.
+     ============================================================ -->
+<div class="feature-page">
+  <!-- Main Area -->
+  <div class="feature-main">
+    <!-- Drop Zone (shown when no PDF loaded) -->
+    <div class="pdf-drop-area drop-zone" id="split-pdfDropArea">
+      <div class="icon">✂️</div>
+      <h2 id="split-dropTitle">Drop a PDF file here</h2>
+      <p>or click to browse and select a PDF to split</p>
+      <button id="split-openPdfBtn" class="btn-primary" style="margin-top:12px;">📂 Open PDF</button>
+    </div>
+
+    <!-- PDF Preview Container (shown after PDF loaded) -->
+    <div class="pdf-page-container hidden" id="split-pdfPageContainer">
+      <div class="pdf-toolbar-inline">
+        <span id="split-fileName" class="file-name"></span>
+        <div class="spacer"></div>
+      </div>
+      <!-- Continuous scroll container for preview -->
+      <div class="pdf-pages-scroll" id="split-pdfPagesScroll"></div>
+      <div class="page-info" id="split-pageInfoBottom"></div>
+    </div>
+
+    <!-- Progress overlay -->
+    <div class="split-progress-overlay hidden" id="split-progressOverlay">
+      <div class="split-progress-card">
+        <div class="split-progress-spinner"></div>
+        <div class="split-progress-text" id="split-progressText">Splitting PDF...</div>
+        <div class="split-progress-bar">
+          <div class="split-progress-fill" id="split-progressFill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="feature-sidebar" style="position:relative;">
+    <button class="feature-sidebar-toggle" id="split-sidebarToggle" title="Collapse Sidebar">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
+
+    <!-- Document Info -->
+    <div class="section">
+      <div class="section-title">📋 Document Info</div>
+      <div class="split-info-list">
+        <div class="split-info-row">
+          <span class="split-info-label">File Name</span>
+          <span class="split-info-value" id="split-infoFileName">—</span>
+        </div>
+        <div class="split-info-row">
+          <span class="split-info-label">Total Pages</span>
+          <span class="split-info-value" id="split-infoPages">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Split Mode Selection -->
+    <div class="section">
+      <div class="section-title">✂️ Split Mode</div>
+
+      <!-- Mode: Every N Pages -->
+      <label class="split-radio-label">
+        <input type="radio" name="splitMode" value="everyN" checked>
+        <span>Every <strong>N</strong> pages</span>
+      </label>
+      <div class="split-option-group" id="split-everyNOptions">
+        <label class="split-option-label">
+          <span>Pages per part:</span>
+          <input type="number" id="split-pagesPerPart" class="split-number-input" value="5" min="1" max="999">
+        </label>
+      </div>
+
+      <!-- Mode: By Page Ranges -->
+      <label class="split-radio-label">
+        <input type="radio" name="splitMode" value="ranges">
+        <span>By page ranges</span>
+      </label>
+      <div class="split-option-group hidden" id="split-rangesOptions">
+        <label class="split-option-label">
+          <span>Ranges (e.g. 1-3, 4-7, 8-10):</span>
+          <input type="text" id="split-pageRanges" class="split-text-input" placeholder="1-3, 4-7, 8-10">
+        </label>
+      </div>
+
+      <!-- Mode: Each Page -->
+      <label class="split-radio-label">
+        <input type="radio" name="splitMode" value="eachPage">
+        <span>Each page into separate PDF</span>
+      </label>
+    </div>
+
+    <!-- Split Preview (shows how many parts will be created) -->
+    <div class="section hidden" id="split-previewSection">
+      <div class="section-title">📋 Split Preview</div>
+      <div class="split-preview-list" id="split-previewList">
+        <!-- Split parts rendered dynamically -->
+      </div>
+      <div class="split-preview-stats">
+        <span id="split-previewTotalParts">0 parts</span>
+      </div>
+    </div>
+
+    <!-- Split Action -->
+    <div class="section">
+      <button id="split-performSplitBtn" class="btn-primary" style="width:100%;padding:12px;font-size:14px" disabled>✂️ Split PDF</button>
+    </div>
+
+    <!-- Privacy Badge -->
+    <div class="split-privacy-badge">
+      🔒 Your files never leave your computer
+    </div>
+
+    <!-- Instructions -->
+    <div class="section" style="background:#f8f9fa;padding:10px;border-radius:6px;font-size:12px;color:#555;line-height:1.5">
+      <strong>💡 How to use:</strong><br>
+      1. Open or drop a PDF file<br>
+      2. Choose a split mode (Every N pages, by ranges, or each page)<br>
+      3. Preview the parts that will be created<br>
+      4. Click "Split PDF" and choose a save folder<br>
+      5. All split parts are saved automatically
+    </div>
+  </div>
+</div>

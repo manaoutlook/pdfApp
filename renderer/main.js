@@ -28,6 +28,7 @@ const features = {
   esign:    { label: 'eSign',    path: 'features/esign/esign.html' },
   compress: { label: 'Compress', path: 'features/compress/compress.html' },
   merge:    { label: 'Merge',    path: 'features/merge/merge.html' },
+  split:    { label: 'Split',    path: 'features/split/split.html' },
 };
 
 let currentFeature = 'preview';

@@ -1,0 +1,323 @@
+/* ============================================================
+   SmartPDF - Split PDF Feature Styles
+   Drop zone, preview area, sidebar with split options.
+   ============================================================ */
+
+/* ---- Drop zone ---- */
+#split-pdfDropArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  border: 2px dashed #dadce0;
+  border-radius: 12px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+#split-pdfDropArea:hover {
+  border-color: #1a73e8;
+  background: #f5f8ff;
+}
+
+#split-pdfDropArea .icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+#split-pdfDropArea h2 {
+  font-size: 16px;
+  color: #333;
+  margin: 0;
+  font-weight: 600;
+}
+
+#split-pdfDropArea p {
+  font-size: 13px;
+  color: #888;
+  margin: 4px 0 0 0;
+}
+
+#split-openPdfBtn {
+  padding: 8px 20px;
+  font-size: 13px;
+}
+
+/* ---- PDF Preview Container ---- */
+#split-pdfPageContainer {
+  position: relative;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  background: white;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#split-pdfPageContainer.hidden {
+  display: none;
+}
+
+#split-fileName {
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Feature Main Layout ---- */
+.feature-main {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* ---- Radio Labels (Split Mode) ---- */
+.split-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+}
+
+.split-radio-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #1a73e8;
+  cursor: pointer;
+}
+
+/* ---- Option Groups ---- */
+.split-option-group {
+  padding: 8px 0 8px 24px;
+  margin-bottom: 4px;
+}
+
+.split-option-group.hidden {
+  display: none;
+}
+
+.split-option-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #555;
+}
+
+.split-number-input {
+  width: 70px;
+  padding: 4px 8px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #333;
+  background: #fff;
+  text-align: center;
+}
+
+.split-number-input:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26,115,232,0.15);
+}
+
+.split-text-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  color: #333;
+  background: #fff;
+  min-width: 150px;
+}
+
+.split-text-input:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26,115,232,0.15);
+}
+
+/* ---- Document Info List ---- */
+.split-info-list {
+  font-size: 12px;
+}
+
+.split-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.split-info-label {
+  color: #888;
+}
+
+.split-info-value {
+  font-weight: 500;
+  color: #202124;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* ---- Split Preview ---- */
+.split-preview-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fff;
+  margin-bottom: 8px;
+}
+
+.split-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 12px;
+  color: #333;
+}
+
+.split-preview-item:last-child {
+  border-bottom: none;
+}
+
+.split-preview-item-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.split-preview-item-name {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.split-preview-item-pages {
+  color: #888;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.split-preview-stats {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a73e8;
+  padding: 4px;
+}
+
+/* ---- Privacy Badge ---- */
+.split-privacy-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #e8f5e9;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #2e7d32;
+  margin-top: 8px;
+}
+
+/* ---- Progress Overlay ---- */
+.split-progress-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.split-progress-overlay.hidden {
+  display: none;
+}
+
+.split-progress-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  min-width: 300px;
+}
+
+.split-progress-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  margin: 0 auto 16px auto;
+  animation: split-spin 0.8s linear infinite;
+}
+
+@keyframes split-spin {
+  to { transform: rotate(360deg); }
+}
+
+.split-progress-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.split-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.split-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1a73e8, #4caf50);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* ---- Split Action Button ---- */
+#split-performSplitBtn {
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#split-performSplitBtn:hover:not(:disabled) {
+  background: #1557b0;
+}
+
+#split-performSplitBtn:disabled {
+  background: #c4c7cc;
+  cursor: not-allowed;
+}
