@@ -29,6 +29,8 @@ const features = {
   compress: { label: 'Compress', path: 'features/compress/compress.html' },
   merge:    { label: 'Merge',    path: 'features/merge/merge.html' },
   split:    { label: 'Split',    path: 'features/split/split.html' },
+  convert:    { label: 'Convert',    path: 'features/convert/convert.html' },
+  'create-pdf': { label: 'To PDF', path: 'features/create-pdf/create-pdf.html' },
 };
 
 let currentFeature = 'preview';

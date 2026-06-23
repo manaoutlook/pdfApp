@@ -1,0 +1,151 @@
+<!-- ============================================================
+     SmartPDF - Convert From PDF Feature
+     Drop zone to load a PDF, choose output format, convert and save.
+     ============================================================ -->
+<div class="feature-page">
+  <!-- Main Area -->
+  <div class="feature-main">
+    <!-- Drop Zone (shown when no PDF loaded) -->
+    <div class="pdf-drop-area drop-zone" id="convert-pdfDropArea">
+      <div class="icon">🔄</div>
+      <h2 id="convert-dropTitle">Drop a PDF file here</h2>
+      <p>or click to browse and select a PDF to convert</p>
+      <button id="convert-openPdfBtn" class="btn-primary" style="margin-top:12px;">📂 Open PDF</button>
+    </div>
+
+    <!-- PDF Preview Container (shown after PDF loaded) -->
+    <div class="pdf-page-container hidden" id="convert-pdfPageContainer">
+      <div class="pdf-toolbar-inline">
+        <span id="convert-fileName" class="file-name"></span>
+        <div class="spacer"></div>
+      </div>
+      <!-- Continuous scroll container for preview -->
+      <div class="pdf-pages-scroll" id="convert-pdfPagesScroll"></div>
+      <div class="page-info" id="convert-pageInfoBottom"></div>
+    </div>
+
+    <!-- Progress overlay -->
+    <div class="convert-progress-overlay hidden" id="convert-progressOverlay">
+      <div class="convert-progress-card">
+        <div class="convert-progress-spinner"></div>
+        <div class="convert-progress-text" id="convert-progressText">Converting PDF...</div>
+        <div class="convert-progress-bar">
+          <div class="convert-progress-fill" id="convert-progressFill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="feature-sidebar" style="position:relative;">
+    <button class="feature-sidebar-toggle" id="convert-sidebarToggle" title="Collapse Sidebar">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
+
+    <!-- Document Info -->
+    <div class="section">
+      <div class="section-title">📋 Document Info</div>
+      <div class="convert-info-list">
+        <div class="convert-info-row">
+          <span class="convert-info-label">File Name</span>
+          <span class="convert-info-value" id="convert-infoFileName">—</span>
+        </div>
+        <div class="convert-info-row">
+          <span class="convert-info-label">Total Pages</span>
+          <span class="convert-info-value" id="convert-infoPages">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output Format Selection -->
+    <div class="section">
+      <div class="section-title">🎯 Output Format</div>
+      <div class="convert-format-grid" id="convert-formatGrid">
+        <label class="convert-format-card selected" data-format="docx">
+          <input type="radio" name="convertFormat" value="docx" checked hidden>
+          <span class="convert-format-icon">📝</span>
+          <span class="convert-format-label">Word</span>
+          <span class="convert-format-ext">.docx</span>
+        </label>
+        <label class="convert-format-card" data-format="xlsx">
+          <input type="radio" name="convertFormat" value="xlsx" hidden>
+          <span class="convert-format-icon">📊</span>
+          <span class="convert-format-label">Excel</span>
+          <span class="convert-format-ext">.xlsx</span>
+        </label>
+        <label class="convert-format-card" data-format="png">
+          <input type="radio" name="convertFormat" value="png" hidden>
+          <span class="convert-format-icon">🖼️</span>
+          <span class="convert-format-label">Images</span>
+          <span class="convert-format-ext">.png</span>
+        </label>
+        <label class="convert-format-card" data-format="jpeg">
+          <input type="radio" name="convertFormat" value="jpeg" hidden>
+          <span class="convert-format-icon">🖼️</span>
+          <span class="convert-format-label">JPEG</span>
+          <span class="convert-format-ext">.jpg</span>
+        </label>
+        <label class="convert-format-card" data-format="txt">
+          <input type="radio" name="convertFormat" value="txt" hidden>
+          <span class="convert-format-icon">📄</span>
+          <span class="convert-format-label">Text</span>
+          <span class="convert-format-ext">.txt</span>
+        </label>
+        <label class="convert-format-card" data-format="csv">
+          <input type="radio" name="convertFormat" value="csv" hidden>
+          <span class="convert-format-icon">📋</span>
+          <span class="convert-format-label">CSV</span>
+          <span class="convert-format-ext">.csv</span>
+        </label>
+        <label class="convert-format-card" data-format="html">
+          <input type="radio" name="convertFormat" value="html" hidden>
+          <span class="convert-format-icon">🌐</span>
+          <span class="convert-format-label">HTML</span>
+          <span class="convert-format-ext">.html</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Format Options -->
+    <div class="section hidden" id="convert-imageOptions">
+      <div class="section-title">⚙️ Image Options</div>
+      <div class="convert-option-row">
+        <label class="convert-option-label">
+          <span>Quality:</span>
+          <input type="range" id="convert-imageQuality" class="convert-range-input" min="10" max="100" value="85">
+          <span class="convert-range-value" id="convert-imageQualityValue">85%</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Convert Preview (summary) -->
+    <div class="section hidden" id="convert-previewSection">
+      <div class="section-title">📋 Convert Preview</div>
+      <div class="convert-preview-info" id="convert-previewInfo">
+        <span id="convert-previewText">Ready to convert</span>
+      </div>
+    </div>
+
+    <!-- Convert Action -->
+    <div class="section">
+      <button id="convert-performBtn" class="btn-primary" style="width:100%;padding:12px;font-size:14px" disabled>🔄 Convert PDF</button>
+    </div>
+
+    <!-- Privacy Badge -->
+    <div class="convert-privacy-badge">
+      🔒 Your files never leave your computer
+    </div>
+
+    <!-- Instructions -->
+    <div class="section" style="background:#f8f9fa;padding:10px;border-radius:6px;font-size:12px;color:#555;line-height:1.5">
+      <strong>💡 How to use:</strong><br>
+      1. Open or drop a PDF file<br>
+      2. Choose an output format (Word, Excel, Images, etc.)<br>
+      3. Adjust any format-specific options<br>
+      4. Click "Convert PDF" and choose a save location<br>
+      5. Your converted file is saved automatically
+    </div>
+  </div>
+</div>

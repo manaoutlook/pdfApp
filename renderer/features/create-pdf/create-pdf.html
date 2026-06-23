@@ -1,0 +1,157 @@
+<!-- ============================================================
+     SmartPDF - Create PDF (Convert To PDF) Feature
+     Drop zone to load DOCX, XLSX, Images, TXT, HTML, CSV files
+     and convert them into PDF documents.
+     ============================================================ -->
+<div class="feature-page">
+  <!-- Main Area -->
+  <div class="feature-main">
+    <!-- Drop Zone (shown when no file loaded) -->
+    <div class="pdf-drop-area drop-zone" id="createpdf-pdfDropArea">
+      <div class="icon">📄</div>
+      <h2 id="createpdf-dropTitle">Drop a file here to create a PDF</h2>
+      <p>or click to browse and select a file</p>
+      <p style="font-size:11px;color:#999;margin-top:8px;">
+        Supports: DOCX, XLSX, PNG, JPEG, BMP, GIF, TIFF, TXT, HTML, CSV
+      </p>
+      <button id="createpdf-openFileBtn" class="btn-primary" style="margin-top:12px;">📂 Open File</button>
+    </div>
+
+    <!-- File Info Area (shown after file loaded) -->
+    <div class="createpdf-info-area hidden" id="createpdf-infoArea">
+      <div class="createpdf-file-card">
+        <div class="createpdf-file-icon" id="createpdf-fileIcon">📄</div>
+        <div class="createpdf-file-details">
+          <div class="createpdf-file-name" id="createpdf-fileName">—</div>
+          <div class="createpdf-file-type" id="createpdf-fileType">—</div>
+          <div class="createpdf-file-size" id="createpdf-fileSize">—</div>
+        </div>
+        <button id="createpdf-changeFileBtn" class="btn-secondary" style="margin-left:auto;">Change</button>
+      </div>
+
+      <!-- Preview area - shows content summary or image thumbnails -->
+      <div class="createpdf-preview-section" id="createpdf-previewSection">
+        <div class="createpdf-preview-header">Preview</div>
+        <div class="createpdf-preview-content" id="createpdf-previewContent">
+          <!-- Dynamic content preview -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress overlay -->
+    <div class="createpdf-progress-overlay hidden" id="createpdf-progressOverlay">
+      <div class="createpdf-progress-card">
+        <div class="createpdf-progress-spinner"></div>
+        <div class="createpdf-progress-text" id="createpdf-progressText">Creating PDF...</div>
+        <div class="createpdf-progress-bar">
+          <div class="createpdf-progress-fill" id="createpdf-progressFill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="feature-sidebar" style="position:relative;">
+    <button class="feature-sidebar-toggle" id="createpdf-sidebarToggle" title="Collapse Sidebar">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+      </svg>
+    </button>
+
+    <!-- File Info Summary -->
+    <div class="section">
+      <div class="section-title">📋 File Summary</div>
+      <div class="createpdf-info-list">
+        <div class="createpdf-info-row">
+          <span class="createpdf-info-label">File Name</span>
+          <span class="createpdf-info-value" id="createpdf-infoFileName">—</span>
+        </div>
+        <div class="createpdf-info-row">
+          <span class="createpdf-info-label">Format</span>
+          <span class="createpdf-info-value" id="createpdf-infoFormat">—</span>
+        </div>
+        <div class="createpdf-info-row">
+          <span class="createpdf-info-label">Size</span>
+          <span class="createpdf-info-value" id="createpdf-infoSize">—</span>
+        </div>
+        <div class="createpdf-info-row">
+          <span class="createpdf-info-label">Est. Pages</span>
+          <span class="createpdf-info-value" id="createpdf-infoPages">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page Options -->
+    <div class="section">
+      <div class="section-title">⚙️ Page Options</div>
+
+      <div class="createpdf-option-row">
+        <label class="createpdf-option-label">
+          <span>Page Size:</span>
+          <select id="createpdf-pageSize" class="createpdf-select">
+            <option value="A4">A4</option>
+            <option value="A3">A3</option>
+            <option value="A5">A5</option>
+            <option value="Letter">Letter</option>
+            <option value="Legal">Legal</option>
+            <option value="Tabloid">Tabloid</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="createpdf-option-row">
+        <label class="createpdf-option-label">
+          <span>Orientation:</span>
+          <select id="createpdf-orientation" class="createpdf-select">
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="createpdf-option-row">
+        <label class="createpdf-option-label">
+          <span>Margin:</span>
+          <select id="createpdf-margin" class="createpdf-select">
+            <option value="60">Wide</option>
+            <option value="40" selected>Normal</option>
+            <option value="20">Narrow</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Multi-image batch option (visible for images) -->
+      <div class="createpdf-option-row hidden" id="createpdf-batchOption">
+        <button id="createpdf-addImagesBtn" class="btn-secondary" style="width:100%;font-size:12px;">
+          📸 Add More Images
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary / Action -->
+    <div class="section">
+      <div class="section-title">📄 Create PDF</div>
+      <div class="createpdf-summary" id="createpdf-summary">
+        <span id="createpdf-summaryText">Open a file to get started</span>
+      </div>
+      <button id="createpdf-performBtn" class="btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:12px;" disabled>
+        📄 Create PDF
+      </button>
+    </div>
+
+    <!-- Privacy Badge -->
+    <div class="createpdf-privacy-badge">
+      🔒 Your files never leave your computer
+    </div>
+
+    <!-- Instructions -->
+    <div class="section" style="background:#f8f9fa;padding:10px;border-radius:6px;font-size:12px;color:#555;line-height:1.5">
+      <strong>💡 How to use:</strong><br>
+      1. Open or drop a file (DOCX, XLSX, Image, TXT, HTML, CSV)<br>
+      2. Adjust page options (size, orientation, margin)<br>
+      3. For images: add multiple to combine into one PDF<br>
+      4. Click "Create PDF" and choose a save location<br>
+      5. Your PDF is saved to your computer
+    </div>
+  </div>
+</div>

@@ -1,0 +1,286 @@
+/* ============================================================
+   SmartPDF - Convert From PDF Feature Styles
+   Drop zone, preview area, sidebar with format options.
+   ============================================================ */
+
+/* ---- Drop zone ---- */
+#convert-pdfDropArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  border: 2px dashed #dadce0;
+  border-radius: 12px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+#convert-pdfDropArea:hover {
+  border-color: #1a73e8;
+  background: #f5f8ff;
+}
+
+#convert-pdfDropArea .icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+#convert-pdfDropArea h2 {
+  font-size: 16px;
+  color: #333;
+  margin: 0;
+  font-weight: 600;
+}
+
+#convert-pdfDropArea p {
+  font-size: 13px;
+  color: #888;
+  margin: 4px 0 0 0;
+}
+
+#convert-openPdfBtn {
+  padding: 8px 20px;
+  font-size: 13px;
+}
+
+/* ---- PDF Preview Container ---- */
+#convert-pdfPageContainer {
+  position: relative;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  background: white;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#convert-pdfPageContainer.hidden {
+  display: none;
+}
+
+#convert-fileName {
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Feature Main Layout ---- */
+.feature-main {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* ---- Format Grid ---- */
+.convert-format-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.convert-format-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border: 2px solid #e8eaed;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: #fafafa;
+  user-select: none;
+}
+
+.convert-format-card:hover {
+  border-color: #a8c7fa;
+  background: #f0f6ff;
+}
+
+.convert-format-card.selected {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+}
+
+.convert-format-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.convert-format-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+}
+
+.convert-format-ext {
+  font-size: 10px;
+  color: #888;
+  font-weight: 500;
+}
+
+/* ---- Option Row ---- */
+.convert-option-row {
+  padding: 6px 0;
+}
+
+.convert-option-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #555;
+}
+
+.convert-range-input {
+  flex: 1;
+  accent-color: #1a73e8;
+  height: 4px;
+  cursor: pointer;
+}
+
+.convert-range-value {
+  font-weight: 600;
+  color: #1a73e8;
+  font-size: 12px;
+  min-width: 35px;
+  text-align: right;
+}
+
+/* ---- Document Info List ---- */
+.convert-info-list {
+  font-size: 12px;
+}
+
+.convert-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.convert-info-label {
+  color: #888;
+}
+
+.convert-info-value {
+  font-weight: 500;
+  color: #202124;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* ---- Convert Preview ---- */
+.convert-preview-info {
+  padding: 8px 10px;
+  background: #f0f6ff;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #1a73e8;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* ---- Privacy Badge ---- */
+.convert-privacy-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #e8f5e9;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #2e7d32;
+  margin-top: 8px;
+}
+
+/* ---- Progress Overlay ---- */
+.convert-progress-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.convert-progress-overlay.hidden {
+  display: none;
+}
+
+.convert-progress-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  min-width: 300px;
+}
+
+.convert-progress-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  margin: 0 auto 16px auto;
+  animation: convert-spin 0.8s linear infinite;
+}
+
+@keyframes convert-spin {
+  to { transform: rotate(360deg); }
+}
+
+.convert-progress-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.convert-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.convert-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1a73e8, #4caf50);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* ---- Convert Action Button ---- */
+#convert-performBtn {
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#convert-performBtn:hover:not(:disabled) {
+  background: #1557b0;
+}
+
+#convert-performBtn:disabled {
+  background: #c4c7cc;
+  cursor: not-allowed;
+}

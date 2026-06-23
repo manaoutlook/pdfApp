@@ -1,0 +1,347 @@
+/* ============================================================
+   SmartPDF - Create PDF (Convert To PDF) Feature Styles
+   Drop zone, file info card, preview area, sidebar options.
+   ============================================================ */
+
+/* ---- Drop zone ---- */
+#createpdf-pdfDropArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  border: 2px dashed #dadce0;
+  border-radius: 12px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+#createpdf-pdfDropArea:hover {
+  border-color: #1a73e8;
+  background: #f5f8ff;
+}
+
+#createpdf-pdfDropArea .icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+#createpdf-pdfDropArea h2 {
+  font-size: 16px;
+  color: #333;
+  margin: 0;
+  font-weight: 600;
+}
+
+#createpdf-pdfDropArea p {
+  font-size: 13px;
+  color: #888;
+  margin: 4px 0 0 0;
+}
+
+#createpdf-openFileBtn {
+  padding: 8px 20px;
+  font-size: 13px;
+}
+
+/* ---- File Info Area ---- */
+.createpdf-info-area {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.createpdf-info-area.hidden {
+  display: none;
+}
+
+.createpdf-file-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.createpdf-file-icon {
+  font-size: 36px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.createpdf-file-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.createpdf-file-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #202124;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.createpdf-file-type {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.createpdf-file-size {
+  font-size: 12px;
+  color: #888;
+}
+
+/* ---- Preview Section ---- */
+.createpdf-preview-section {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.createpdf-preview-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  padding: 10px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.createpdf-preview-content {
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.6;
+}
+
+.createpdf-preview-content p {
+  margin: 6px 0;
+}
+
+.createpdf-preview-content .preview-heading {
+  font-weight: 600;
+  color: #1a73e8;
+  margin-top: 12px;
+}
+
+.createpdf-preview-content .preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.createpdf-preview-content .preview-table th,
+.createpdf-preview-content .preview-table td {
+  border: 1px solid #e0e0e0;
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.createpdf-preview-content .preview-table th {
+  background: #f0f6ff;
+  font-weight: 600;
+}
+
+/* Image thumbnail grid in preview */
+.createpdf-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.createpdf-image-thumb {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.createpdf-image-count {
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* ---- Sidebar Info List ---- */
+.createpdf-info-list {
+  font-size: 12px;
+}
+
+.createpdf-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.createpdf-info-label {
+  color: #888;
+}
+
+.createpdf-info-value {
+  font-weight: 500;
+  color: #202124;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* ---- Options ---- */
+.createpdf-option-row {
+  padding: 5px 0;
+}
+
+.createpdf-option-row.hidden {
+  display: none;
+}
+
+.createpdf-option-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #555;
+}
+
+.createpdf-select {
+  padding: 4px 8px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  color: #333;
+  background: #fff;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.createpdf-select:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26,115,232,0.15);
+}
+
+/* ---- Summary ---- */
+.createpdf-summary {
+  padding: 8px 10px;
+  background: #f0f6ff;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #1a73e8;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* ---- Privacy Badge ---- */
+.createpdf-privacy-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #e8f5e9;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #2e7d32;
+  margin-top: 8px;
+}
+
+/* ---- Progress Overlay ---- */
+.createpdf-progress-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.createpdf-progress-overlay.hidden {
+  display: none;
+}
+
+.createpdf-progress-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  min-width: 300px;
+}
+
+.createpdf-progress-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  margin: 0 auto 16px auto;
+  animation: createpdf-spin 0.8s linear infinite;
+}
+
+@keyframes createpdf-spin {
+  to { transform: rotate(360deg); }
+}
+
+.createpdf-progress-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.createpdf-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.createpdf-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1a73e8, #4caf50);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* ---- Create PDF Action Button ---- */
+#createpdf-performBtn {
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#createpdf-performBtn:hover:not(:disabled) {
+  background: #1557b0;
+}
+
+#createpdf-performBtn:disabled {
+  background: #c4c7cc;
+  cursor: not-allowed;
+}
